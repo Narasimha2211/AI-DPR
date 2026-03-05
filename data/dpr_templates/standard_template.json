@@ -1,0 +1,221 @@
+{
+    "template_version": "1.0",
+    "applicable_to": "Indian Government DPR - Central & State Projects",
+    "reference": "NITI Aayog / MDoNER DPR Guidelines",
+
+    "sections": [
+        {
+            "id": 1,
+            "name": "Executive Summary",
+            "key": "executive_summary",
+            "mandatory": true,
+            "min_words": 200,
+            "description": "Brief overview of the entire project covering key aspects",
+            "must_include": [
+                "Project name and location",
+                "Implementing agency",
+                "Total estimated cost",
+                "Project duration",
+                "Key objectives",
+                "Expected benefits and outcomes"
+            ]
+        },
+        {
+            "id": 2,
+            "name": "Project Background & Justification",
+            "key": "project_background",
+            "mandatory": true,
+            "min_words": 300,
+            "description": "Context, need analysis, and rationale for the project",
+            "must_include": [
+                "Existing situation analysis",
+                "Problem/need identification",
+                "Gap analysis",
+                "Target population/beneficiaries",
+                "Demand assessment",
+                "Policy alignment"
+            ]
+        },
+        {
+            "id": 3,
+            "name": "Project Objectives",
+            "key": "objectives",
+            "mandatory": true,
+            "min_words": 100,
+            "description": "Clear, measurable project objectives",
+            "must_include": [
+                "Primary objective",
+                "Specific/secondary objectives",
+                "Measurable targets",
+                "Alignment with national/state goals"
+            ]
+        },
+        {
+            "id": 4,
+            "name": "Scope of Work",
+            "key": "scope_of_work",
+            "mandatory": true,
+            "min_words": 250,
+            "description": "Detailed description of project components and activities",
+            "must_include": [
+                "Project components",
+                "Key activities",
+                "Deliverables",
+                "Coverage area",
+                "Exclusions"
+            ]
+        },
+        {
+            "id": 5,
+            "name": "Technical Feasibility",
+            "key": "technical_feasibility",
+            "mandatory": true,
+            "min_words": 500,
+            "description": "Technical analysis, design, and engineering details",
+            "must_include": [
+                "Technical design/specifications",
+                "Technology selection rationale",
+                "Engineering standards",
+                "Capacity assessment",
+                "Site/survey data",
+                "Alternative analysis"
+            ]
+        },
+        {
+            "id": 6,
+            "name": "Financial Analysis",
+            "key": "financial_analysis",
+            "mandatory": true,
+            "min_words": 400,
+            "description": "Financial viability and economic analysis",
+            "must_include": [
+                "Cost-benefit analysis",
+                "Financial rate of return",
+                "Economic rate of return",
+                "Funding sources",
+                "Revenue model (if applicable)"
+            ]
+        },
+        {
+            "id": 7,
+            "name": "Cost Estimates",
+            "key": "cost_estimates",
+            "mandatory": true,
+            "min_words": 200,
+            "description": "Detailed cost breakdown with estimates",
+            "must_include": [
+                "Component-wise cost breakup",
+                "Bill of Quantities (BOQ)",
+                "Unit rates and basis",
+                "Contingency provisions (5-10%)",
+                "Escalation provisions",
+                "Price basis date"
+            ]
+        },
+        {
+            "id": 8,
+            "name": "Implementation Schedule",
+            "key": "implementation_schedule",
+            "mandatory": true,
+            "min_words": 200,
+            "description": "Project timeline with milestones",
+            "must_include": [
+                "Phase-wise timeline",
+                "Key milestones",
+                "Critical path activities",
+                "Procurement schedule",
+                "Construction/implementation timeline"
+            ]
+        },
+        {
+            "id": 9,
+            "name": "Institutional Framework",
+            "key": "institutional_framework",
+            "mandatory": true,
+            "min_words": 200,
+            "description": "Organizational setup for project implementation",
+            "must_include": [
+                "Implementing agency",
+                "Project management structure",
+                "Roles and responsibilities",
+                "Coordination mechanism",
+                "Staffing plan"
+            ]
+        },
+        {
+            "id": 10,
+            "name": "Environmental & Social Impact Assessment",
+            "key": "environmental_impact",
+            "mandatory": true,
+            "min_words": 300,
+            "description": "Environmental and social impact analysis",
+            "must_include": [
+                "Environmental impact assessment",
+                "Social impact assessment",
+                "Mitigation measures",
+                "Environmental clearance status",
+                "Resettlement & rehabilitation (if applicable)",
+                "Gender impact"
+            ]
+        },
+        {
+            "id": 11,
+            "name": "Risk Assessment & Mitigation",
+            "key": "risk_assessment",
+            "mandatory": true,
+            "min_words": 250,
+            "description": "Project risk analysis and management plan",
+            "must_include": [
+                "Risk identification",
+                "Probability-impact assessment",
+                "Mitigation strategies",
+                "Contingency plan",
+                "Risk monitoring framework"
+            ]
+        },
+        {
+            "id": 12,
+            "name": "Monitoring & Evaluation Framework",
+            "key": "monitoring_evaluation",
+            "mandatory": true,
+            "min_words": 200,
+            "description": "Framework for tracking project progress",
+            "must_include": [
+                "Key Performance Indicators (KPIs)",
+                "Monitoring mechanism",
+                "Reporting frequency",
+                "Evaluation methodology",
+                "Mid-term review provision"
+            ]
+        },
+        {
+            "id": 13,
+            "name": "Sustainability Plan",
+            "key": "sustainability",
+            "mandatory": true,
+            "min_words": 200,
+            "description": "Long-term sustainability of the project",
+            "must_include": [
+                "Operation & Maintenance plan",
+                "Revenue sustainability",
+                "Institutional sustainability",
+                "Environmental sustainability",
+                "Transfer/handover plan"
+            ]
+        },
+        {
+            "id": 14,
+            "name": "Annexures & Supporting Documents",
+            "key": "annexures",
+            "mandatory": false,
+            "min_words": 50,
+            "description": "Supporting documentation",
+            "must_include": [
+                "Detailed drawings/maps",
+                "Survey reports",
+                "Letters of support",
+                "NOCs and clearances"
+            ]
+        }
+    ]
+}

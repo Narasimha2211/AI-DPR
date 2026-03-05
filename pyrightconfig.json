@@ -1,0 +1,10 @@
+{
+    "include": ["app", "config", "ml", "tests"],
+    "extraPaths": ["."],
+    "venvPath": ".",
+    "venv": ".venv",
+    "reportMissingImports": "warning",
+    "reportMissingModuleSource": "warning",
+    "pythonVersion": "3.9",
+    "typeCheckingMode": "basic"
+}

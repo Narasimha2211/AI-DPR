@@ -1,0 +1,128 @@
+{
+    "ruleset_version": "1.0",
+    "description": "MDoNER specific DPR compliance rules for North Eastern Region states",
+
+    "central_government_rules": {
+        "minimum_sections": 10,
+        "mandatory_sections": [
+            "executive_summary",
+            "project_background",
+            "objectives",
+            "technical_feasibility",
+            "financial_analysis",
+            "cost_estimates",
+            "implementation_schedule",
+            "risk_assessment"
+        ],
+        "financial_norms": {
+            "contingency_range_percent": [3, 10],
+            "escalation_range_percent": [3, 7],
+            "admin_overhead_max_percent": 5,
+            "supervision_charges_max_percent": 3
+        }
+    },
+
+    "mdoner_specific_rules": {
+        "funding_pattern": {
+            "central_share_percent": 90,
+            "state_share_percent": 10,
+            "note": "90:10 pattern for NE Special Category States"
+        },
+        "additional_requirements": [
+            "Terrain and accessibility assessment",
+            "Tribal community impact assessment",
+            "Northeast specific challenge mitigation",
+            "Connectivity infrastructure assessment",
+            "Climate vulnerability assessment"
+        ],
+        "priority_sectors": [
+            "connectivity",
+            "tourism",
+            "power and energy",
+            "horticulture and agriculture",
+            "education",
+            "health",
+            "water resources",
+            "skill development",
+            "sports infrastructure",
+            "border area development"
+        ],
+        "special_provisions": [
+            "Special Category State status",
+            "Border Area Development Programme",
+            "North East Special Infrastructure Development Scheme",
+            "Non-Lapsable Central Pool of Resources",
+            "10% gross budgetary support earmarking"
+        ]
+    },
+
+    "state_specific_rules": {
+        "Arunachal Pradesh": {
+            "mandatory_clearances": ["forest clearance", "tribal consent", "border clearance"],
+            "risk_factors": ["extreme terrain", "limited connectivity", "international border"],
+            "special_focus": ["hydropower projects", "strategic roads", "tribal welfare"]
+        },
+        "Assam": {
+            "mandatory_clearances": ["flood risk assessment", "wetland impact assessment"],
+            "risk_factors": ["annual flooding", "river erosion", "earthquake zone"],
+            "special_focus": ["flood management", "embankments", "drainage"]
+        },
+        "Manipur": {
+            "mandatory_clearances": ["ethnic harmony impact assessment"],
+            "risk_factors": ["ethnic tensions", "hill-valley divide", "Myanmar border"],
+            "special_focus": ["border trade", "sports infrastructure", "connectivity"]
+        },
+        "Meghalaya": {
+            "mandatory_clearances": ["sixth schedule compliance", "autonomous council consent"],
+            "risk_factors": ["heavy rainfall", "mining impacts", "deforestation"],
+            "special_focus": ["sustainable mining", "tourism", "livelihood"]
+        },
+        "Mizoram": {
+            "mandatory_clearances": ["community land consent"],
+            "risk_factors": ["terrain difficulty", "limited connectivity"],
+            "special_focus": ["bamboo economy", "border trade", "organic farming"]
+        },
+        "Nagaland": {
+            "mandatory_clearances": ["tribal council approval", "village council consent"],
+            "risk_factors": ["tribal land issues", "terrain", "connectivity"],
+            "special_focus": ["tribal economy", "tourism", "horticulture"]
+        },
+        "Sikkim": {
+            "mandatory_clearances": ["ecological sensitivity clearance"],
+            "risk_factors": ["earthquake zone", "landslides", "glacial lake outburst"],
+            "special_focus": ["organic farming", "tourism", "hydropower"]
+        },
+        "Tripura": {
+            "mandatory_clearances": ["border area clearance"],
+            "risk_factors": ["Bangladesh border", "connectivity challenges"],
+            "special_focus": ["rubber cultivation", "border trade", "IT services"]
+        }
+    },
+
+    "scoring_rules": {
+        "section_completeness": {
+            "weight": 0.25,
+            "scoring": {
+                "present_and_detailed": 100,
+                "present_but_brief": 50,
+                "missing": 0
+            }
+        },
+        "technical_depth": {
+            "weight": 0.20,
+            "criteria": ["specifications", "design details", "technology justification", "standards compliance"]
+        },
+        "financial_accuracy": {
+            "weight": 0.20,
+            "criteria": ["cost breakdown", "BOQ", "contingency", "escalation", "funding source"]
+        },
+        "compliance": {
+            "weight": 0.20,
+            "criteria": ["central norms", "state norms", "environmental clearance", "social safeguards"]
+        },
+        "risk_quality": {
+            "weight": 0.15,
+            "criteria": ["risk identification", "probability assessment", "mitigation plan", "monitoring"]
+        }
+    }
+}

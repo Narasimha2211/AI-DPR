@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI DPR Analysis System</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">🏛️</div>
+            <div>
+                <h1>AI DPR Analysis System</h1>
+                <span class="subtitle">AI-Powered Detailed Project Report Analysis</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <span class="badge badge-success" id="status-badge">System Online</span>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+        <button class="nav-tab active" data-tab="upload" onclick="switchTab('upload')">
+            <i class="fas fa-upload"></i> Upload DPR
+        </button>
+        <button class="nav-tab" data-tab="analysis" onclick="switchTab('analysis')">
+            <i class="fas fa-search-plus"></i> Analysis
+        </button>
+        <button class="nav-tab" data-tab="quality" onclick="switchTab('quality')">
+            <i class="fas fa-star"></i> Quality Score
+        </button>
+        <button class="nav-tab" data-tab="risk" onclick="switchTab('risk')">
+            <i class="fas fa-exclamation-triangle"></i> Risk Prediction
+        </button>
+        <button class="nav-tab" data-tab="dashboard" onclick="switchTab('dashboard')">
+            <i class="fas fa-chart-bar"></i> Dashboard
+        </button>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+        <!-- ============ UPLOAD TAB ============ -->
+        <section id="tab-upload" class="tab-content active">
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-cloud-upload-alt"></i> Upload Detailed Project Report</h2>
+                </div>
+                <div class="card-body">
+                    <form id="upload-form" enctype="multipart/form-data">
+                        <!-- File Upload Area -->
+                        <div class="upload-area" id="upload-area">
+                            <i class="fas fa-file-pdf upload-icon"></i>
+                            <h3>Drag & Drop your DPR here</h3>
+                            <p>or click to browse</p>
+                            <p class="upload-formats">Supported: PDF, DOCX, DOC, TXT | Max: 50MB</p>
+                            <input type="file" id="file-input" accept=".pdf,.docx,.doc,.txt" hidden>
+                        </div>
+                        <div id="file-info" class="file-info hidden">
+                            <i class="fas fa-file-alt"></i>
+                            <span id="file-name"></span>
+                            <span id="file-size"></span>
+                            <button type="button" onclick="clearFile()" class="btn-icon"><i class="fas fa-times"></i></button>
+                        </div>
+
+                        <!-- Project Details -->
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label><i class="fas fa-map-marker-alt"></i> State</label>
+                                <select id="state-select" name="state">
+                                    <option value="">Select State</option>
+                                    <optgroup label="🏔️ MDoNER States (North East)">
+                                        <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+                                        <option value="Assam">Assam</option>
+                                        <option value="Manipur">Manipur</option>
+                                        <option value="Meghalaya">Meghalaya</option>
+                                        <option value="Mizoram">Mizoram</option>
+                                        <option value="Nagaland">Nagaland</option>
+                                        <option value="Sikkim">Sikkim</option>
+                                        <option value="Tripura">Tripura</option>
+                                    </optgroup>
+                                    <optgroup label="📍 Other States">
+                                        <option value="Andhra Pradesh">Andhra Pradesh</option>
+                                        <option value="Bihar">Bihar</option>
+                                        <option value="Chhattisgarh">Chhattisgarh</option>
+                                        <option value="Goa">Goa</option>
+                                        <option value="Gujarat">Gujarat</option>
+                                        <option value="Haryana">Haryana</option>
+                                        <option value="Himachal Pradesh">Himachal Pradesh</option>
+                                        <option value="Jharkhand">Jharkhand</option>
+                                        <option value="Karnataka">Karnataka</option>
+                                        <option value="Kerala">Kerala</option>
+                                        <option value="Madhya Pradesh">Madhya Pradesh</option>
+                                        <option value="Maharashtra">Maharashtra</option>
+                                        <option value="Odisha">Odisha</option>
+                                        <option value="Punjab">Punjab</option>
+                                        <option value="Rajasthan">Rajasthan</option>
+                                        <option value="Tamil Nadu">Tamil Nadu</option>
+                                        <option value="Telangana">Telangana</option>
+                                        <option value="Uttar Pradesh">Uttar Pradesh</option>
+                                        <option value="Uttarakhand">Uttarakhand</option>
+                                        <option value="West Bengal">West Bengal</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label><i class="fas fa-project-diagram"></i> Project Type</label>
+                                <select id="project-type" name="project_type">
+                                    <option value="">Select Type</option>
+                                    <option value="road">Road / Highway</option>
+                                    <option value="bridge">Bridge / Flyover</option>
+                                    <option value="building">Building / Complex</option>
+                                    <option value="water">Water Supply / Irrigation</option>
+                                    <option value="power">Power / Energy</option>
+                                    <option value="education">Education Infrastructure</option>
+                                    <option value="health">Health Infrastructure</option>
+                                    <option value="tourism">Tourism Development</option>
+                                    <option value="it">IT / Digital Infrastructure</option>
+                                    <option value="urban">Urban Development</option>
+                                    <option value="rural">Rural Development</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label><i class="fas fa-tag"></i> Project Name</label>
+                                <input type="text" id="project-name" name="project_name" placeholder="Enter project name">
+                            </div>
+                            <div class="form-group">
+                                <label><i class="fas fa-rupee-sign"></i> Estimated Cost (₹ Crores)</label>
+                                <input type="number" id="project-cost" name="project_cost_crores" placeholder="e.g., 150" step="0.01">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg" id="upload-btn">
+                            <i class="fas fa-upload"></i> Upload & Analyze DPR
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Upload Progress -->
+            <div id="upload-progress" class="card hidden">
+                <div class="card-body">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <p id="progress-text" class="text-center">Uploading...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ ANALYSIS TAB ============ -->
+        <section id="tab-analysis" class="tab-content">
+            <div id="analysis-placeholder" class="placeholder-card">
+                <i class="fas fa-file-search"></i>
+                <h3>Upload a DPR to see NLP Analysis</h3>
+                <p>Sections, entities, financial figures, and more</p>
+            </div>
+
+            <div id="analysis-results" class="hidden">
+                <!-- Summary Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-file-alt"></i></div>
+                        <div class="stat-value" id="stat-pages">-</div>
+                        <div class="stat-label">Pages</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-font"></i></div>
+                        <div class="stat-value" id="stat-words">-</div>
+                        <div class="stat-label">Words</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-layer-group"></i></div>
+                        <div class="stat-value" id="stat-sections">-</div>
+                        <div class="stat-label">Sections Found</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-rupee-sign"></i></div>
+                        <div class="stat-value" id="stat-financial">-</div>
+                        <div class="stat-label">Financial Figures</div>
+                    </div>
+                </div>
+
+                <!-- Sections Analysis -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-list-check"></i> Section Analysis</h2>
+                    </div>
+                    <div class="card-body" id="sections-list"></div>
+                </div>
+
+                <!-- Entities -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-tags"></i> Extracted Entities</h2>
+                    </div>
+                    <div class="card-body" id="entities-list"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ QUALITY TAB ============ -->
+        <section id="tab-quality" class="tab-content">
+            <div id="quality-placeholder" class="placeholder-card">
+                <i class="fas fa-award"></i>
+                <h3>Upload a DPR to see Quality Score</h3>
+                <p>Comprehensive quality grading with detailed breakdown</p>
+            </div>
+
+            <div id="quality-results" class="hidden">
+                <!-- Grade Display -->
+                <div class="grade-display" id="grade-display">
+                    <div class="grade-circle" id="grade-circle">
+                        <span class="grade-letter" id="grade-letter">-</span>
+                        <span class="grade-score" id="grade-score">0</span>
+                    </div>
+                    <div class="grade-info">
+                        <h2 id="grade-description">-</h2>
+                        <p id="grade-status">Upload a DPR to get quality assessment</p>
+                    </div>
+                </div>
+
+                <!-- Score Breakdown -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-chart-pie"></i> Score Breakdown</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="score-bars" id="score-bars"></div>
+                        <div class="chart-container">
+                            <canvas id="quality-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recommendations -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-lightbulb"></i> Recommendations</h2>
+                    </div>
+                    <div class="card-body" id="quality-recommendations"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ RISK TAB ============ -->
+        <section id="tab-risk" class="tab-content">
+            <div id="risk-placeholder" class="placeholder-card">
+                <i class="fas fa-shield-alt"></i>
+                <h3>Upload a DPR to see Risk Prediction</h3>
+                <p>ML-powered cost overrun & delay prediction with explainability</p>
+            </div>
+
+            <div id="risk-results" class="hidden">
+                <!-- Risk Summary -->
+                <div class="risk-summary">
+                    <div class="risk-card" id="risk-level-card">
+                        <h3>Overall Risk Level</h3>
+                        <div class="risk-badge" id="risk-level-badge">-</div>
+                    </div>
+                    <div class="risk-card">
+                        <h3>Cost Overrun Risk</h3>
+                        <div class="risk-percentage" id="cost-risk-pct">0%</div>
+                        <div class="risk-bar">
+                            <div class="risk-bar-fill" id="cost-risk-bar"></div>
+                        </div>
+                    </div>
+                    <div class="risk-card">
+                        <h3>Delay Risk</h3>
+                        <div class="risk-percentage" id="delay-risk-pct">0%</div>
+                        <div class="risk-bar">
+                            <div class="risk-bar-fill" id="delay-risk-bar"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Risk Charts -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-chart-line"></i> Monte Carlo Simulation</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="monte-carlo-chart"></canvas>
+                        </div>
+                        <div id="monte-carlo-stats"></div>
+                    </div>
+                </div>
+
+                <!-- Explainability -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-brain"></i> AI Explainability</h2>
+                    </div>
+                    <div class="card-body" id="explainability-content"></div>
+                </div>
+
+                <!-- Mitigation Strategies -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-shield-alt"></i> Mitigation Strategies</h2>
+                    </div>
+                    <div class="card-body" id="mitigation-content"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ DASHBOARD TAB ============ -->
+        <section id="tab-dashboard" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-info-circle"></i> System Information</h2>
+                </div>
+                <div class="card-body">
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <h4>🏛️ AI DPR Analysis System</h4>
+                            <p>AI-Powered Detailed Project Report Analysis</p>
+                        </div>
+                        <div class="info-item">
+                            <h4>📋 Features</h4>
+                            <ul>
+                                <li>NLP-based document parsing & section identification</li>
+                                <li>OCR for scanned DPRs with 10+ Indian languages</li>
+                                <li>Quality scoring with 5 weighted criteria</li>
+                                <li>Government compliance validation (Central + State)</li>
+                                <li>ML-powered risk prediction (Cost & Delay)</li>
+                                <li>Monte Carlo simulation for risk quantification</li>
+                                <li>Explainable AI with SHAP/LIME</li>
+                                <li>MDoNER-specific compliance rules</li>
+                            </ul>
+                        </div>
+                        <div class="info-item">
+                            <h4>🏔️ MDoNER States</h4>
+                            <div class="state-tags" id="mdoner-tags"></div>
+                        </div>
+                        <div class="info-item">
+                            <h4>📊 Grading System</h4>
+                            <div class="grade-table" id="grade-table"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>🏛️ AI DPR Analysis System | Powered by NLP + ML + Responsible AI</p>
+        <p>Document Intelligence • Quality Scoring • Compliance Validation • Risk Prediction</p>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
