@@ -305,10 +305,6 @@ Key settings in `config/settings.py`:
 
 ## 📝 License
 
-MIT License — Built for **Smart India Hackathon 2026**
 
 ---
 
-<p align="center">
-  Made with ❤️ for India's North Eastern States 🏔️
-</p>
