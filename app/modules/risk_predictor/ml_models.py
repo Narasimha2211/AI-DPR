@@ -34,25 +34,33 @@ class RiskMLModels:
         logger.info("RiskMLModels initialized")
 
     def load_models(self) -> bool:
-        """Load pre-trained models from disk."""
+        """Load pre-trained models from disk (.pkl or .joblib)."""
         try:
-            cost_path = self.models_dir / "cost_overrun_model.pkl"
-            delay_path = self.models_dir / "delay_model.pkl"
-            risk_path = self.models_dir / "risk_classifier.pkl"
+            # Check both .pkl and .joblib extensions
+            for ext in [".pkl", ".joblib"]:
+                cost_path = self.models_dir / f"cost_overrun_model{ext}"
+                delay_path = self.models_dir / f"delay_model{ext}"
+                risk_path = self.models_dir / f"risk_classifier{ext}"
 
-            if cost_path.exists():
-                self.cost_model = joblib.load(str(cost_path))
-                logger.info("Cost overrun model loaded")
+                if cost_path.exists() and self.cost_model is None:
+                    self.cost_model = joblib.load(str(cost_path))
+                    logger.info(f"Cost overrun model loaded from {cost_path.name}")
 
-            if delay_path.exists():
-                self.delay_model = joblib.load(str(delay_path))
-                logger.info("Delay prediction model loaded")
+                if delay_path.exists() and self.delay_model is None:
+                    self.delay_model = joblib.load(str(delay_path))
+                    logger.info(f"Delay prediction model loaded from {delay_path.name}")
 
-            if risk_path.exists():
-                self.risk_classifier = joblib.load(str(risk_path))
-                logger.info("Risk classifier loaded")
+                if risk_path.exists() and self.risk_classifier is None:
+                    self.risk_classifier = joblib.load(str(risk_path))
+                    logger.info(f"Risk classifier loaded from {risk_path.name}")
 
-            return True
+            loaded = sum(1 for m in [self.cost_model, self.delay_model, self.risk_classifier] if m is not None)
+            if loaded:
+                logger.info(f"✅ {loaded}/3 ML models loaded — using trained predictions")
+            else:
+                logger.info("ℹ️ No trained models found — using heuristic rules")
+
+            return loaded > 0
         except Exception as e:
             logger.error(f"Failed to load models: {e}")
             return False

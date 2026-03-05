@@ -40,6 +40,9 @@
         <button class="nav-tab" data-tab="dashboard" onclick="switchTab('dashboard')">
             <i class="fas fa-chart-bar"></i> Dashboard
         </button>
+        <button class="nav-tab" data-tab="learning" onclick="switchTab('learning')">
+            <i class="fas fa-brain"></i> Model Learning
+        </button>
     </nav>
 
     <!-- Main Content -->
@@ -345,6 +348,125 @@
                             <div class="grade-table" id="grade-table"></div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ MODEL LEARNING TAB ============ -->
+        <section id="tab-learning" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-brain"></i> AI Model Learning</h2>
+                </div>
+                <div class="card-body">
+                    <p style="color: #94a3b8; margin-bottom: 20px;">
+                        The AI learns from every DPR you upload. The more documents it analyzes,
+                        the more accurate its predictions become. Each upload adds training data
+                        that makes cost overrun, delay, and risk predictions smarter.
+                    </p>
+                    <div id="learning-summary" class="info-item" style="background:rgba(59,130,246,0.1); padding:15px; border-radius:8px; margin-bottom:20px;">
+                        <span style="color:#94a3b8;">Loading learning status...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Learning Stats -->
+            <div class="stats-grid" id="learning-stats">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-database"></i></div>
+                    <div class="stat-value" id="learn-total-samples">0</div>
+                    <div class="stat-label">DPRs Learned</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-user-check"></i></div>
+                    <div class="stat-value" id="learn-corrected">0</div>
+                    <div class="stat-label">User-Verified</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-code-branch"></i></div>
+                    <div class="stat-value" id="learn-model-version">v0</div>
+                    <div class="stat-label">Model Version</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-plus-circle"></i></div>
+                    <div class="stat-value" id="learn-new-samples">0</div>
+                    <div class="stat-label">New Since Train</div>
+                </div>
+            </div>
+
+            <!-- Retrain Button -->
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-sync-alt"></i> Retrain Models</h2>
+                </div>
+                <div class="card-body" style="text-align: center;">
+                    <p style="color: #94a3b8; margin-bottom: 15px;" id="retrain-message">
+                        Upload more DPRs to enable model retraining.
+                    </p>
+                    <button class="btn btn-primary btn-lg" id="retrain-btn" onclick="retrainModels()">
+                        <i class="fas fa-rocket"></i> Retrain AI Models
+                    </button>
+                    <div id="retrain-progress" class="hidden" style="margin-top: 15px;">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="retrain-progress-fill" style="width:0%;"></div>
+                        </div>
+                        <p id="retrain-progress-text" style="color:#94a3b8; margin-top:8px;">Training...</p>
+                    </div>
+                    <div id="retrain-result" class="hidden" style="margin-top: 15px;"></div>
+                </div>
+            </div>
+
+            <!-- Model Accuracy History -->
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-chart-line"></i> Accuracy Over Time</h2>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="accuracy-chart"></canvas>
+                    </div>
+                    <div id="version-history-list" style="margin-top: 15px;"></div>
+                </div>
+            </div>
+
+            <!-- Feedback Section -->
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-comment-dots"></i> Improve Predictions</h2>
+                </div>
+                <div class="card-body">
+                    <p style="color: #94a3b8; margin-bottom: 15px;">
+                        After a project completes, provide actual outcomes to help the AI learn.
+                        Ground truth data makes future predictions significantly more accurate.
+                    </p>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label><i class="fas fa-file-alt"></i> Document ID</label>
+                            <input type="number" id="feedback-doc-id" placeholder="e.g., 3" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-rupee-sign"></i> Actual Cost Overrun (%)</label>
+                            <input type="number" id="feedback-cost" placeholder="e.g., 15" step="0.1" min="0" max="100">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-clock"></i> Actual Delay (months)</label>
+                            <input type="number" id="feedback-delay" placeholder="e.g., 6" step="0.5" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-exclamation-triangle"></i> Actual Risk Level</label>
+                            <select id="feedback-risk">
+                                <option value="">Select</option>
+                                <option value="Low">Low</option>
+                                <option value="Medium">Medium</option>
+                                <option value="High">High</option>
+                                <option value="Critical">Critical</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="submitFeedback()" style="margin-top: 10px;">
+                        <i class="fas fa-paper-plane"></i> Submit Feedback
+                    </button>
+                    <div id="feedback-result" class="hidden" style="margin-top: 10px;"></div>
                 </div>
             </div>
         </section>

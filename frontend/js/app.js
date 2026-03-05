@@ -523,4 +523,251 @@ function initDashboard() {
 }
 
 // Init on load
-document.addEventListener('DOMContentLoaded', initDashboard);
+document.addEventListener('DOMContentLoaded', () => {
+    initDashboard();
+    loadLearningStatus();
+});
+
+
+// ──── Model Learning Functions ────
+
+async function loadLearningStatus() {
+    try {
+        const resp = await fetch(`${API_BASE}/api/learning/status`);
+        if (!resp.ok) return;
+        const data = await resp.json();
+
+        const td = data.training_data || {};
+        document.getElementById('learn-total-samples').textContent = td.total || 0;
+        document.getElementById('learn-corrected').textContent = td.user_corrected || 0;
+        document.getElementById('learn-model-version').textContent = `v${data.current_model_version || 0}`;
+        document.getElementById('learn-new-samples').textContent = data.new_samples_since_last_train || 0;
+
+        // Summary
+        const summaryDiv = document.getElementById('learning-summary');
+        summaryDiv.innerHTML = `<span style="line-height:1.8;">${data.learning_summary || ''}</span>`;
+
+        // Retrain button state
+        const retrainMsg = document.getElementById('retrain-message');
+        const retrainBtn = document.getElementById('retrain-btn');
+        if (data.retrain_recommended) {
+            retrainMsg.innerHTML = `🔄 <strong>${data.new_samples_since_last_train} new DPR(s)</strong> available for training. Retraining is recommended!`;
+            retrainBtn.classList.add('pulse');
+        } else if (td.total === 0) {
+            retrainMsg.textContent = 'Upload DPRs first to generate training data, then retrain the models.';
+        } else {
+            retrainMsg.textContent = `Models are up to date. Upload ${data.retrain_threshold - data.new_samples_since_last_train} more DPR(s) before next retrain.`;
+        }
+
+        // Version history chart
+        if (data.version_history && data.version_history.length > 0) {
+            renderAccuracyChart(data.version_history);
+            renderVersionHistory(data.version_history);
+        }
+
+    } catch (err) {
+        console.warn('Could not load learning status:', err);
+    }
+}
+
+function renderAccuracyChart(history) {
+    const ctx = document.getElementById('accuracy-chart');
+    if (!ctx) return;
+    if (window.accuracyChart) window.accuracyChart.destroy();
+
+    // Reverse to chronological order
+    const sorted = [...history].reverse();
+    const labels = sorted.map(v => `v${v.version}`);
+
+    const costR2 = sorted.map(v => {
+        const m = v.cost_metrics || {};
+        return (m.r2 || 0) * 100;
+    });
+    const riskAcc = sorted.map(v => {
+        const m = v.risk_metrics || {};
+        return (m.accuracy || 0) * 100;
+    });
+    const realSamples = sorted.map(v => v.real_samples || 0);
+
+    window.accuracyChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'Cost Model R² (%)',
+                    data: costR2,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59,130,246,0.15)',
+                    fill: true,
+                    tension: 0.3,
+                    borderWidth: 2,
+                    pointRadius: 4,
+                },
+                {
+                    label: 'Risk Classifier Accuracy (%)',
+                    data: riskAcc,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16,185,129,0.15)',
+                    fill: true,
+                    tension: 0.3,
+                    borderWidth: 2,
+                    pointRadius: 4,
+                },
+                {
+                    label: 'Real DPR Samples',
+                    data: realSamples,
+                    borderColor: '#f59e0b',
+                    borderDash: [5, 5],
+                    fill: false,
+                    tension: 0.3,
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    yAxisID: 'y1',
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+                y: {
+                    beginAtZero: true, max: 100,
+                    title: { display: true, text: 'Accuracy (%)', color: '#94a3b8' },
+                    grid: { color: 'rgba(255,255,255,0.05)' },
+                    ticks: { color: '#94a3b8' },
+                },
+                y1: {
+                    position: 'right',
+                    beginAtZero: true,
+                    title: { display: true, text: 'DPR Samples', color: '#94a3b8' },
+                    grid: { drawOnChartArea: false },
+                    ticks: { color: '#94a3b8' },
+                },
+                x: { ticks: { color: '#94a3b8' } }
+            },
+            plugins: {
+                legend: { labels: { color: '#94a3b8' } },
+                title: { display: true, text: 'Model Accuracy Improvement Over Versions', color: '#94a3b8' }
+            }
+        }
+    });
+}
+
+function renderVersionHistory(history) {
+    const container = document.getElementById('version-history-list');
+    if (!container || !history.length) return;
+
+    container.innerHTML = '<h4 style="margin-bottom:10px; color:#e2e8f0;">Training History</h4>';
+    history.forEach(v => {
+        const costR2 = v.cost_metrics ? `R²: ${(v.cost_metrics.r2 * 100).toFixed(1)}%` : '-';
+        const riskAcc = v.risk_metrics ? `Acc: ${(v.risk_metrics.accuracy * 100).toFixed(1)}%` : '-';
+        const date = v.trained_at ? new Date(v.trained_at).toLocaleDateString() : '-';
+
+        container.innerHTML += `
+            <div class="section-item" style="margin-bottom:5px;">
+                <div class="section-status">
+                    <i class="fas fa-code-branch" style="color: #3b82f6;"></i>
+                    <span><strong>v${v.version}</strong> — ${v.real_samples} real + ${v.total_samples - v.real_samples} synthetic samples</span>
+                </div>
+                <span style="color: #94a3b8; font-size: 0.85em;">
+                    Cost ${costR2} | Risk ${riskAcc} | ${date}
+                </span>
+            </div>`;
+    });
+}
+
+async function retrainModels() {
+    const btn = document.getElementById('retrain-btn');
+    const progress = document.getElementById('retrain-progress');
+    const progressFill = document.getElementById('retrain-progress-fill');
+    const progressText = document.getElementById('retrain-progress-text');
+    const resultDiv = document.getElementById('retrain-result');
+
+    btn.disabled = true;
+    progress.classList.remove('hidden');
+    resultDiv.classList.add('hidden');
+
+    progressFill.style.width = '30%';
+    progressFill.style.background = 'var(--accent)';
+    progressText.textContent = '🧠 Training ML models with accumulated DPR data...';
+
+    try {
+        const resp = await fetch(`${API_BASE}/api/learning/retrain`, { method: 'POST' });
+        const data = await resp.json();
+
+        if (!resp.ok) throw new Error(data.detail || 'Training failed');
+
+        progressFill.style.width = '100%';
+        progressFill.style.background = 'var(--success)';
+        progressText.textContent = '✅ Training complete!';
+
+        const models = data.training_report?.models || {};
+        const costR2 = models.cost_overrun?.r2 ? `${(models.cost_overrun.r2 * 100).toFixed(1)}%` : '-';
+        const riskAcc = models.risk_classifier?.accuracy ? `${(models.risk_classifier.accuracy * 100).toFixed(1)}%` : '-';
+
+        resultDiv.classList.remove('hidden');
+        resultDiv.innerHTML = `
+            <div style="background: rgba(16,185,129,0.1); padding: 15px; border-radius: 8px; border-left: 4px solid var(--success);">
+                <h4 style="color: var(--success); margin-bottom: 10px;">🎉 Model v${data.model_version} trained successfully!</h4>
+                <p><strong>${data.real_samples_used}</strong> real DPR(s) used for training</p>
+                <p>Cost Model R²: <strong>${costR2}</strong> | Risk Classifier Accuracy: <strong>${riskAcc}</strong></p>
+                <p style="color: #94a3b8; margin-top: 8px;">Future predictions will now use the improved models.</p>
+            </div>`;
+
+        // Refresh learning status
+        setTimeout(loadLearningStatus, 1000);
+
+    } catch (err) {
+        progressFill.style.width = '100%';
+        progressFill.style.background = 'var(--danger)';
+        progressText.textContent = `❌ Error: ${err.message}`;
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+async function submitFeedback() {
+    const docId = document.getElementById('feedback-doc-id').value;
+    if (!docId) {
+        alert('Please enter a Document ID');
+        return;
+    }
+
+    const params = { document_id: docId };
+    const cost = document.getElementById('feedback-cost').value;
+    const delay = document.getElementById('feedback-delay').value;
+    const risk = document.getElementById('feedback-risk').value;
+    if (cost) params.actual_cost_overrun = cost;
+    if (delay) params.actual_delay_months = delay;
+    if (risk) params.actual_risk_level = risk;
+
+    const resultDiv = document.getElementById('feedback-result');
+
+    try {
+        const resp = await fetch(
+            `${API_BASE}/api/learning/feedback${buildQuery(params)}`,
+            { method: 'POST' }
+        );
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || 'Feedback failed');
+
+        resultDiv.classList.remove('hidden');
+        resultDiv.innerHTML = `
+            <div style="background: rgba(16,185,129,0.1); padding: 12px; border-radius: 8px; border-left: 4px solid var(--success);">
+                ✅ ${data.message} (Fields updated: ${data.corrected_fields.join(', ')})
+            </div>`;
+
+        // Clear form
+        document.getElementById('feedback-cost').value = '';
+        document.getElementById('feedback-delay').value = '';
+        document.getElementById('feedback-risk').value = '';
+
+        setTimeout(loadLearningStatus, 500);
+
+    } catch (err) {
+        resultDiv.classList.remove('hidden');
+        resultDiv.innerHTML = `<div style="background:rgba(239,68,68,0.1);padding:12px;border-radius:8px;border-left:4px solid var(--danger);">❌ ${err.message}</div>`;
+    }
+}

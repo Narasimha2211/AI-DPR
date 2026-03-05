@@ -237,6 +237,55 @@ class UserFeedback(Base):
     )
 
 
+class TrainingData(Base):
+    """
+    Stores feature vectors + labels extracted from every analyzed DPR.
+    Used by the incremental learning system to retrain ML models.
+    Each DPR produces one training sample.
+    """
+    __tablename__ = "training_data"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    document_id: Mapped[int] = mapped_column(
+        ForeignKey("dpr_documents.id", ondelete="CASCADE"), nullable=False, unique=True
+    )
+    features: Mapped[Optional[Any]] = mapped_column(JSON, default=None)
+    labels: Mapped[Optional[Any]] = mapped_column(JSON, default=None)
+    metadata_info: Mapped[Optional[Any]] = mapped_column(JSON, default=None)
+    is_user_corrected: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    source: Mapped[str] = mapped_column(String(30), default="auto")
+    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+        default=datetime.datetime.utcnow, index=True
+    )
+    updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+        default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow
+    )
+
+    document: Mapped["DPRDocument"] = relationship()
+
+
+class ModelVersion(Base):
+    """
+    Tracks ML model training history. Each retrain creates a new version
+    so the system can show accuracy improving over time.
+    """
+    __tablename__ = "model_versions"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    real_samples_used: Mapped[int] = mapped_column(Integer, default=0)
+    synthetic_samples_used: Mapped[int] = mapped_column(Integer, default=0)
+    total_samples_used: Mapped[int] = mapped_column(Integer, default=0)
+    cost_model_metrics: Mapped[Optional[Any]] = mapped_column(JSON, default=None)
+    delay_model_metrics: Mapped[Optional[Any]] = mapped_column(JSON, default=None)
+    risk_model_metrics: Mapped[Optional[Any]] = mapped_column(JSON, default=None)
+    feature_importance: Mapped[Optional[Any]] = mapped_column(JSON, default=None)
+    training_report: Mapped[Optional[Any]] = mapped_column(JSON, default=None)
+    trained_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+        default=datetime.datetime.utcnow, index=True
+    )
+
+
 class AnalyticsLog(Base):
     """Tracks system usage and analytics."""
     __tablename__ = "analytics_logs"

@@ -15,7 +15,7 @@ from loguru import logger
 
 from config.settings import settings, BASE_DIR
 from app.models.database import init_db
-from app.api.routes import upload, analysis, scoring, risk, dashboard
+from app.api.routes import upload, analysis, scoring, risk, dashboard, learning
 
 
 @asynccontextmanager
@@ -72,6 +72,7 @@ app.include_router(analysis.router)
 app.include_router(scoring.router)
 app.include_router(risk.router)
 app.include_router(dashboard.router)
+app.include_router(learning.router)
 
 
 @app.get("/", response_class=HTMLResponse)

@@ -13,7 +13,7 @@ from sqlalchemy.orm import selectinload
 from app.models.db_models import (
     State, DPRSectionDef, ComplianceRule, ScoringWeight, GradeDefinition,
     DPRDocument, DPRAnalysis, QualityScore, RiskAssessment,
-    UserFeedback, AnalyticsLog,
+    UserFeedback, AnalyticsLog, TrainingData, ModelVersion,
 )
 
 
@@ -424,3 +424,128 @@ async def get_dashboard_stats(db: AsyncSession) -> dict:
             for d in recent_docs
         ],
     }
+
+
+# ─── Training Data CRUD (Incremental Learning) ───
+
+async def save_training_sample(
+    db: AsyncSession,
+    document_id: int,
+    features: dict,
+    labels: dict,
+    metadata_info: Optional[dict] = None,
+    source: str = "auto",
+) -> TrainingData:
+    """Save or update a training sample for a DPR."""
+    result = await db.execute(
+        select(TrainingData).where(TrainingData.document_id == document_id)
+    )
+    td = result.scalar_one_or_none()
+    if td:
+        td.features = features
+        td.labels = labels
+        td.metadata_info = metadata_info
+        td.source = source
+        td.updated_at = datetime.datetime.utcnow()
+    else:
+        td = TrainingData(
+            document_id=document_id,
+            features=features,
+            labels=labels,
+            metadata_info=metadata_info,
+            source=source,
+        )
+        db.add(td)
+    await db.flush()
+    return td
+
+
+async def update_training_labels(
+    db: AsyncSession,
+    document_id: int,
+    corrected_labels: dict,
+) -> Optional[TrainingData]:
+    """Update labels with user-corrected values (ground truth)."""
+    result = await db.execute(
+        select(TrainingData).where(TrainingData.document_id == document_id)
+    )
+    td = result.scalar_one_or_none()
+    if td:
+        existing = td.labels or {}
+        existing.update(corrected_labels)
+        td.labels = existing
+        td.is_user_corrected = True
+        td.updated_at = datetime.datetime.utcnow()
+        await db.flush()
+    return td
+
+
+async def get_all_training_data(
+    db: AsyncSession, corrected_only: bool = False
+) -> List[TrainingData]:
+    """Retrieve all training samples."""
+    q = select(TrainingData).order_by(TrainingData.created_at)
+    if corrected_only:
+        q = q.where(TrainingData.is_user_corrected == True)
+    result = await db.execute(q)
+    return list(result.scalars().all())
+
+
+async def get_training_data_count(db: AsyncSession) -> dict:
+    """Get count of training samples."""
+    total = (await db.execute(select(func.count(TrainingData.id)))).scalar() or 0
+    corrected = (await db.execute(
+        select(func.count(TrainingData.id)).where(TrainingData.is_user_corrected == True)
+    )).scalar() or 0
+    return {"total": total, "user_corrected": corrected, "auto_labeled": total - corrected}
+
+
+# ─── Model Version CRUD ───
+
+async def save_model_version(
+    db: AsyncSession,
+    training_report: dict,
+) -> ModelVersion:
+    """Record a new model version after training."""
+    # Get next version number
+    latest = (await db.execute(
+        select(func.max(ModelVersion.version))
+    )).scalar() or 0
+    new_version = latest + 1
+
+    mv = ModelVersion(
+        version=new_version,
+        real_samples_used=training_report.get("real_samples", 0),
+        synthetic_samples_used=training_report.get("synthetic_samples", 0),
+        total_samples_used=training_report.get("total_training_samples", 0),
+        cost_model_metrics=training_report.get("models", {}).get("cost_overrun"),
+        delay_model_metrics=training_report.get("models", {}).get("delay"),
+        risk_model_metrics=training_report.get("models", {}).get("risk_classifier"),
+        feature_importance=training_report.get("feature_importance"),
+        training_report=training_report,
+    )
+    db.add(mv)
+    await db.flush()
+    return mv
+
+
+async def get_model_versions(
+    db: AsyncSession, limit: int = 20
+) -> List[ModelVersion]:
+    """Get model version history (newest first)."""
+    result = await db.execute(
+        select(ModelVersion)
+        .order_by(desc(ModelVersion.version))
+        .limit(limit)
+    )
+    return list(result.scalars().all())
+
+
+async def get_latest_model_version(
+    db: AsyncSession,
+) -> Optional[ModelVersion]:
+    """Get the latest model version."""
+    result = await db.execute(
+        select(ModelVersion).order_by(desc(ModelVersion.version)).limit(1)
+    )
+    return result.scalar_one_or_none()

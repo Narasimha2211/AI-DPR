@@ -17,6 +17,7 @@ from app.modules.document_parser.table_extractor import TableExtractor
 from app.modules.quality_scorer.quality_report import QualityScorer
 from typing import Optional
 from app.modules.risk_predictor.risk_analyzer import RiskAnalyzer
+from app.services.learning_service import extract_training_sample
 
 router = APIRouter(prefix="/api/risk", tags=["Risk Prediction"])
 
@@ -100,6 +101,22 @@ async def predict_risk(
             doc = await db_service.get_document(db, document_id)
             if doc:
                 await db_service.save_risk_assessment(db, document_id, risk_report)
+                # Save training sample for incremental learning
+                sample = extract_training_sample(
+                    nlp_analysis=nlp_analysis,
+                    quality_report=quality_report,
+                    risk_report=risk_report,
+                    compliance_report=compliance_report,
+                    state=state,
+                    project_type=project_type,
+                    project_cost=cost_value,
+                )
+                await db_service.save_training_sample(
+                    db, document_id,
+                    features=sample["features"],
+                    labels=sample["labels"],
+                    metadata_info=sample["metadata"],
+                )
 
         duration_ms = (time.time() - t0) * 1000
         await db_service.log_action(
@@ -213,6 +230,22 @@ async def full_dpr_analysis(
                 await db_service.save_quality_score(db, document_id, quality_report)
                 await db_service.save_risk_assessment(
                     db, document_id, risk_report, verdict=verdict,
+                )
+                # Save training sample for incremental learning
+                sample = extract_training_sample(
+                    nlp_analysis=nlp_analysis,
+                    quality_report=quality_report,
+                    risk_report=risk_report,
+                    compliance_report=compliance_report,
+                    state=state,
+                    project_type=project_type,
+                    project_cost=cost_value,
+                )
+                await db_service.save_training_sample(
+                    db, document_id,
+                    features=sample["features"],
+                    labels=sample["labels"],
+                    metadata_info=sample["metadata"],
                 )
 
         # Check MDoNER status from DB
