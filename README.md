@@ -303,7 +303,7 @@ Key settings in `config/settings.py`:
 
 ---
 
-## 📝 License
+
 
 
 ---
