@@ -1,0 +1,234 @@
+{
+    "states": {
+        "Arunachal Pradesh": {
+            "code": "AR",
+            "region": "North East",
+            "is_mdoner": true,
+            "capital": "Itanagar",
+            "terrain": "mountainous",
+            "primary_languages": ["English", "Hindi"],
+            "challenges": ["terrain", "connectivity", "border sensitivity"],
+            "priority_sectors": ["hydropower", "tourism", "border infrastructure"]
+        },
+        "Assam": {
+            "code": "AS",
+            "region": "North East",
+            "is_mdoner": true,
+            "capital": "Dispur",
+            "terrain": "flood-plain",
+            "primary_languages": ["Assamese", "English", "Bengali"],
+            "challenges": ["floods", "erosion", "connectivity"],
+            "priority_sectors": ["flood management", "tea industry", "oil & gas", "tourism"]
+        },
+        "Manipur": {
+            "code": "MN",
+            "region": "North East",
+            "is_mdoner": true,
+            "capital": "Imphal",
+            "terrain": "hilly",
+            "primary_languages": ["Manipuri", "English"],
+            "challenges": ["connectivity", "ethnic diversity", "border trade"],
+            "priority_sectors": ["sports", "handloom", "border trade", "tourism"]
+        },
+        "Meghalaya": {
+            "code": "ML",
+            "region": "North East",
+            "is_mdoner": true,
+            "capital": "Shillong",
+            "terrain": "plateau",
+            "primary_languages": ["Khasi", "Garo", "English"],
+            "challenges": ["mining", "deforestation", "rainfall"],
+            "priority_sectors": ["tourism", "agriculture", "mining reform"]
+        },
+        "Mizoram": {
+            "code": "MZ",
+            "region": "North East",
+            "is_mdoner": true,
+            "capital": "Aizawl",
+            "terrain": "hilly",
+            "primary_languages": ["Mizo", "English"],
+            "challenges": ["terrain", "connectivity", "border areas"],
+            "priority_sectors": ["bamboo industry", "border trade", "tourism"]
+        },
+        "Nagaland": {
+            "code": "NL",
+            "region": "North East",
+            "is_mdoner": true,
+            "capital": "Kohima",
+            "terrain": "hilly",
+            "primary_languages": ["English"],
+            "challenges": ["terrain", "tribal governance", "connectivity"],
+            "priority_sectors": ["tribal economy", "tourism", "horticulture"]
+        },
+        "Sikkim": {
+            "code": "SK",
+            "region": "North East",
+            "is_mdoner": true,
+            "capital": "Gangtok",
+            "terrain": "mountainous",
+            "primary_languages": ["Nepali", "English", "Sikkimese"],
+            "challenges": ["earthquakes", "landslides", "border sensitivity"],
+            "priority_sectors": ["organic farming", "tourism", "hydropower"]
+        },
+        "Tripura": {
+            "code": "TR",
+            "region": "North East",
+            "is_mdoner": true,
+            "capital": "Agartala",
+            "terrain": "mixed",
+            "primary_languages": ["Bengali", "Kokborok", "English"],
+            "challenges": ["connectivity", "border areas"],
+            "priority_sectors": ["rubber plantation", "border trade", "IT"]
+        },
+        "Andhra Pradesh": {
+            "code": "AP",
+            "region": "South",
+            "is_mdoner": false,
+            "capital": "Amaravati",
+            "terrain": "mixed",
+            "primary_languages": ["Telugu", "English"],
+            "challenges": ["cyclones", "drought", "new capital development"],
+            "priority_sectors": ["IT", "agriculture", "infrastructure"]
+        },
+        "Bihar": {
+            "code": "BR",
+            "region": "East",
+            "is_mdoner": false,
+            "capital": "Patna",
+            "terrain": "flood-plain",
+            "primary_languages": ["Hindi", "Maithili"],
+            "challenges": ["floods", "poverty", "infrastructure deficit"],
+            "priority_sectors": ["flood management", "education", "roads"]
+        },
+        "Gujarat": {
+            "code": "GJ",
+            "region": "West",
+            "is_mdoner": false,
+            "capital": "Gandhinagar",
+            "terrain": "plain",
+            "primary_languages": ["Gujarati", "English"],
+            "challenges": ["drought", "industrial pollution"],
+            "priority_sectors": ["industry", "ports", "renewable energy"]
+        },
+        "Karnataka": {
+            "code": "KA",
+            "region": "South",
+            "is_mdoner": false,
+            "capital": "Bengaluru",
+            "terrain": "mixed",
+            "primary_languages": ["Kannada", "English"],
+            "challenges": ["urbanization", "water management"],
+            "priority_sectors": ["IT", "agriculture", "infrastructure"]
+        },
+        "Kerala": {
+            "code": "KL",
+            "region": "South",
+            "is_mdoner": false,
+            "capital": "Thiruvananthapuram",
+            "terrain": "mixed",
+            "primary_languages": ["Malayalam", "English"],
+            "challenges": ["floods", "landslides", "urbanization"],
+            "priority_sectors": ["tourism", "IT", "health"]
+        },
+        "Maharashtra": {
+            "code": "MH",
+            "region": "West",
+            "is_mdoner": false,
+            "capital": "Mumbai",
+            "terrain": "mixed",
+            "primary_languages": ["Marathi", "English"],
+            "challenges": ["urbanization", "drought", "infrastructure"],
+            "priority_sectors": ["industry", "infrastructure", "agriculture"]
+        },
+        "Madhya Pradesh": {
+            "code": "MP",
+            "region": "Central",
+            "is_mdoner": false,
+            "capital": "Bhopal",
+            "terrain": "plain",
+            "primary_languages": ["Hindi"],
+            "challenges": ["tribal areas", "irrigation", "connectivity"],
+            "priority_sectors": ["agriculture", "tribal welfare", "tourism"]
+        },
+        "Odisha": {
+            "code": "OD",
+            "region": "East",
+            "is_mdoner": false,
+            "capital": "Bhubaneswar",
+            "terrain": "mixed",
+            "primary_languages": ["Odia", "English"],
+            "challenges": ["cyclones", "tribal areas", "mining"],
+            "priority_sectors": ["disaster management", "industry", "tribal welfare"]
+        },
+        "Punjab": {
+            "code": "PB",
+            "region": "North",
+            "is_mdoner": false,
+            "capital": "Chandigarh",
+            "terrain": "plain",
+            "primary_languages": ["Punjabi", "Hindi"],
+            "challenges": ["groundwater depletion", "stubble burning"],
+            "priority_sectors": ["agriculture", "industry", "water management"]
+        },
+        "Rajasthan": {
+            "code": "RJ",
+            "region": "West",
+            "is_mdoner": false,
+            "capital": "Jaipur",
+            "terrain": "plain",
+            "primary_languages": ["Hindi", "Rajasthani"],
+            "challenges": ["drought", "water scarcity", "desert terrain"],
+            "priority_sectors": ["water management", "solar energy", "tourism"]
+        },
+        "Tamil Nadu": {
+            "code": "TN",
+            "region": "South",
+            "is_mdoner": false,
+            "capital": "Chennai",
+            "terrain": "plain",
+            "primary_languages": ["Tamil", "English"],
+            "challenges": ["cyclones", "drought", "urbanization"],
+            "priority_sectors": ["industry", "IT", "infrastructure"]
+        },
+        "Telangana": {
+            "code": "TS",
+            "region": "South",
+            "is_mdoner": false,
+            "capital": "Hyderabad",
+            "terrain": "plain",
+            "primary_languages": ["Telugu", "English"],
+            "challenges": ["water management", "urbanization"],
+            "priority_sectors": ["IT", "pharma", "irrigation"]
+        },
+        "Uttar Pradesh": {
+            "code": "UP",
+            "region": "North",
+            "is_mdoner": false,
+            "capital": "Lucknow",
+            "terrain": "plain",
+            "primary_languages": ["Hindi"],
+            "challenges": ["population density", "floods", "infrastructure"],
+            "priority_sectors": ["infrastructure", "agriculture", "industry"]
+        },
+        "Uttarakhand": {
+            "code": "UK",
+            "region": "North",
+            "is_mdoner": false,
+            "capital": "Dehradun",
+            "terrain": "mountainous",
+            "primary_languages": ["Hindi"],
+            "challenges": ["landslides", "earthquakes", "forest fires"],
+            "priority_sectors": ["tourism", "hydropower", "disaster management"]
+        },
+        "West Bengal": {
+            "code": "WB",
+            "region": "East",
+            "is_mdoner": false,
+            "capital": "Kolkata",
+            "terrain": "flood-plain",
+            "primary_languages": ["Bengali", "English"],
+            "challenges": ["floods", "urbanization", "tea industry"],
+            "priority_sectors": ["industry", "agriculture", "tourism"]
+        }
+    }
+}
