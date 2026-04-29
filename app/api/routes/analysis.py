@@ -8,12 +8,14 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
 from loguru import logger
+from sqlalchemy.orm import Session
 
 from config.settings import settings
-from app.models.database import get_db
-from app.services import db_service
+from config.postgres_config import get_db
+from app.services import postgres_db_service as db_service
+from app.api.dependencies import get_current_user
+from app.api.security import validate_file_path
 from app.modules.document_parser.pdf_extractor import PDFExtractor
 from app.modules.document_parser.nlp_processor import NLPProcessor
 from app.modules.document_parser.table_extractor import TableExtractor
@@ -34,7 +36,8 @@ async def analyze_dpr(
     document_id: int = Query(None, description="Document ID from upload"),
     state: Optional[str] = Query(None, description="Indian state name"),
     include_ocr: bool = Query(False, description="Enable OCR for scanned documents"),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Run comprehensive NLP analysis on an uploaded DPR.
@@ -43,9 +46,8 @@ async def analyze_dpr(
     # Normalise optional params (frontend may send empty strings)
     state = state.strip() if state else None
 
-    file_path_obj = Path(file_path)
-    if not file_path_obj.exists():
-        raise HTTPException(status_code=404, detail=f"File not found: {file_path}")
+    # Security: validate path is within uploads directory
+    file_path_obj = validate_file_path(file_path)
 
     t0 = time.time()
 
@@ -87,10 +89,11 @@ async def analyze_dpr(
 
         # Step 4: Persist to PostgreSQL
         if document_id:
-            doc = await db_service.get_document(db, document_id)
+            doc = db_service.get_document(db, document_id)
             if doc:
-                await db_service.save_analysis(
-                    db, document_id,
+                db_service.save_analysis(
+                    db,
+                    document_id,
                     nlp_result=nlp_analysis,
                     table_analysis=table_analysis,
                     extraction_meta={
@@ -100,8 +103,9 @@ async def analyze_dpr(
                 )
 
         duration_ms = (time.time() - t0) * 1000
-        await db_service.log_action(
-            db, action="analyze", document_id=document_id, state=state,
+        db_service.log_action(
+            db,
+            action="analyze", document_id=document_id, state=state,
             details={"file": file_path_obj.name}, duration_ms=duration_ms,
         )
 
@@ -129,11 +133,9 @@ async def analyze_dpr(
 
 
 @router.post("/extract-text")
-async def extract_text_only(file_path: str):
+async def extract_text_only(file_path: str, current_user: dict = Depends(get_current_user)):
     """Extract raw text from a document."""
-    file_path_obj = Path(file_path)
-    if not file_path_obj.exists():
-        raise HTTPException(status_code=404, detail="File not found")
+    file_path_obj = validate_file_path(file_path)
 
     if file_path_obj.suffix.lower() == ".pdf":
         result = pdf_extractor.extract_text(file_path)
@@ -152,11 +154,9 @@ async def extract_text_only(file_path: str):
 
 
 @router.post("/identify-sections")
-async def identify_sections(file_path: str):
+async def identify_sections(file_path: str, current_user: dict = Depends(get_current_user)):
     """Identify DPR sections in a document."""
-    file_path_obj = Path(file_path)
-    if not file_path_obj.exists():
-        raise HTTPException(status_code=404, detail="File not found")
+    file_path_obj = validate_file_path(file_path)
 
     extraction = pdf_extractor.extract_text(file_path)
     sections = nlp_processor.identify_sections(extraction.get("full_text", ""))
@@ -174,11 +174,9 @@ async def identify_sections(file_path: str):
 
 
 @router.post("/extract-financial")
-async def extract_financial_data(file_path: str):
+async def extract_financial_data(file_path: str, current_user: dict = Depends(get_current_user)):
     """Extract financial figures from a DPR."""
-    file_path_obj = Path(file_path)
-    if not file_path_obj.exists():
-        raise HTTPException(status_code=404, detail="File not found")
+    file_path_obj = validate_file_path(file_path)
 
     extraction = pdf_extractor.extract_text(file_path)
     figures = nlp_processor.extract_financial_figures(extraction.get("full_text", ""))

@@ -7,11 +7,13 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
 from loguru import logger
+from sqlalchemy.orm import Session
 
-from app.models.database import get_db
-from app.services import db_service
+from config.postgres_config import get_db
+from app.services import postgres_db_service as db_service
+from app.api.dependencies import get_current_user
+from app.api.security import validate_file_path
 from app.modules.document_parser.pdf_extractor import PDFExtractor
 from app.modules.document_parser.nlp_processor import NLPProcessor
 from app.modules.document_parser.table_extractor import TableExtractor
@@ -31,7 +33,8 @@ async def get_quality_score(
     document_id: int = Query(None, description="Document ID from upload"),
     state: Optional[str] = Query(None, description="Indian state name"),
     project_type: Optional[str] = Query(None, description="Project type"),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Generate comprehensive quality score for a DPR.
@@ -41,9 +44,8 @@ async def get_quality_score(
     state = state.strip() if state else None
     project_type = project_type.strip() if project_type else None
 
-    file_path_obj = Path(file_path)
-    if not file_path_obj.exists():
-        raise HTTPException(status_code=404, detail="File not found")
+    # Security: validate path is within uploads directory
+    file_path_obj = validate_file_path(file_path)
 
     t0 = time.time()
 
@@ -73,13 +75,14 @@ async def get_quality_score(
 
         # Persist to PostgreSQL
         if document_id:
-            doc = await db_service.get_document(db, document_id)
+            doc = db_service.get_document(db, document_id)
             if doc:
-                await db_service.save_quality_score(db, document_id, score_report)
+                db_service.save_quality_score(db, document_id, score_report)
 
         duration_ms = (time.time() - t0) * 1000
-        await db_service.log_action(
-            db, action="quality_score", document_id=document_id, state=state,
+        db_service.log_action(
+            db,
+            action="quality_score", document_id=document_id, state=state,
             details={"score": score_report.get("composite_score")},
             duration_ms=duration_ms,
         )
@@ -103,11 +106,10 @@ async def check_compliance(
     file_path: str,
     state: str = Query(None),
     project_type: str = Query(None),
+    current_user: dict = Depends(get_current_user),
 ):
     """Run compliance validation against government standards."""
-    file_path_obj = Path(file_path)
-    if not file_path_obj.exists():
-        raise HTTPException(status_code=404, detail="File not found")
+    file_path_obj = validate_file_path(file_path)
 
     try:
         extraction = pdf_extractor.extract_text(file_path)

@@ -10,6 +10,15 @@ let currentState = null;
 let currentProjectType = null;
 let currentProjectCost = null;
 let analysisData = null;
+
+// ── Security: HTML entity escaping to prevent XSS ──
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    const s = String(str);
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(s));
+    return div.innerHTML;
+}
 let qualityData = null;
 let riskData = null;
 
@@ -24,6 +33,12 @@ function buildQuery(params) {
 
 // ---- Tab Navigation ----
 function switchTab(tabName) {
+    // Hide any open modals before switching tabs
+    const authOverlay = document.getElementById('auth-modal-overlay');
+    if (authOverlay) {
+        authOverlay.classList.add('hidden');
+    }
+    
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
     document.getElementById(`tab-${tabName}`).classList.add('active');
@@ -35,23 +50,31 @@ const uploadArea = document.getElementById('upload-area');
 const fileInput = document.getElementById('file-input');
 const uploadForm = document.getElementById('upload-form');
 
-uploadArea.addEventListener('click', () => fileInput.click());
-uploadArea.addEventListener('dragover', e => {
-    e.preventDefault();
-    uploadArea.classList.add('drag-over');
-});
-uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag-over'));
-uploadArea.addEventListener('drop', e => {
-    e.preventDefault();
-    uploadArea.classList.remove('drag-over');
-    if (e.dataTransfer.files.length) {
-        fileInput.files = e.dataTransfer.files;
-        showFileInfo(e.dataTransfer.files[0]);
-    }
-});
-fileInput.addEventListener('change', () => {
-    if (fileInput.files.length) showFileInfo(fileInput.files[0]);
-});
+// Ensure elements exist before adding listeners
+if (uploadArea && fileInput && uploadForm) {
+    uploadArea.addEventListener('click', () => {
+        console.log('Upload area clicked');
+        fileInput.click();
+    });
+    uploadArea.addEventListener('dragover', e => {
+        e.preventDefault();
+        uploadArea.classList.add('drag-over');
+    });
+    uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag-over'));
+    uploadArea.addEventListener('drop', e => {
+        e.preventDefault();
+        uploadArea.classList.remove('drag-over');
+        if (e.dataTransfer.files.length) {
+            fileInput.files = e.dataTransfer.files;
+            showFileInfo(e.dataTransfer.files[0]);
+        }
+    });
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length) showFileInfo(fileInput.files[0]);
+    });
+} else {
+    console.error('Upload form elements not found:', { uploadArea, fileInput, uploadForm });
+}
 
 function showFileInfo(file) {
     document.getElementById('file-info').classList.remove('hidden');
@@ -67,12 +90,13 @@ function clearFile() {
 }
 
 // ---- Form Submit ----
-uploadForm.addEventListener('submit', async e => {
-    e.preventDefault();
-    if (!fileInput.files.length) {
-        alert('Please select a DPR file to upload');
-        return;
-    }
+if (uploadForm) {
+    uploadForm.addEventListener('submit', async e => {
+        e.preventDefault();
+        if (!fileInput.files.length) {
+            alert('Please select a DPR file to upload');
+            return;
+        }
 
     const formData = new FormData();
     formData.append('file', fileInput.files[0]);
@@ -98,7 +122,7 @@ uploadForm.addEventListener('submit', async e => {
         progressFill.style.width = '20%';
         progressText.textContent = '📤 Uploading DPR...';
 
-        const uploadResp = await fetch(`${API_BASE}/api/upload/dpr`, {
+        const uploadResp = await authFetch(`${API_BASE}/api/upload/dpr`, {
             method: 'POST', body: formData
         });
         const uploadResult = await uploadResp.json();
@@ -108,92 +132,57 @@ uploadForm.addEventListener('submit', async e => {
         currentFilePath = uploadResult.file_path;
         currentDocumentId = uploadResult.document_id;
 
-        // Step 2: NLP Analysis
-        progressFill.style.width = '40%';
-        progressText.textContent = '🧠 Running NLP Analysis...';
+        // Step 2: Connect to WebSocket for real-time progress
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}${uploadResult.websocket_url}`;
+        const ws = new WebSocket(wsUrl);
 
-        try {
-            const analysisResp = await fetch(
-                `${API_BASE}/api/analysis/analyze${buildQuery({
-                    file_path: currentFilePath,
-                    document_id: currentDocumentId,
-                    state: currentState
-                })}`,
-                { method: 'POST' }
-            );
-            analysisData = await analysisResp.json();
-            if (analysisResp.ok) {
+        ws.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            if (msg.progress) progressFill.style.width = `${msg.progress}%`;
+            if (msg.message) progressText.textContent = msg.message;
+
+            if (msg.step === 'error') {
+                progressFill.style.background = 'var(--danger)';
+                uploadBtn.disabled = false;
+                ws.close();
+            }
+
+            if (msg.step === 'done') {
+                // Pipeline complete
+                analysisData = msg.data.analysis;
+                qualityData = msg.data.quality;
+                riskData = msg.data.risk;
+
                 renderAnalysis(analysisData);
-            } else {
-                console.warn('Analysis returned error:', analysisData);
-            }
-        } catch (analysisErr) {
-            console.warn('Analysis step failed:', analysisErr);
-        }
-
-        // Step 3: Quality Scoring
-        progressFill.style.width = '65%';
-        progressText.textContent = '⭐ Calculating Quality Score...';
-
-        try {
-            const qualityResp = await fetch(
-                `${API_BASE}/api/scoring/quality-score${buildQuery({
-                    file_path: currentFilePath,
-                    document_id: currentDocumentId,
-                    state: currentState,
-                    project_type: currentProjectType
-                })}`,
-                { method: 'POST' }
-            );
-            qualityData = await qualityResp.json();
-            if (qualityResp.ok) {
                 renderQualityScore(qualityData);
-            } else {
-                console.warn('Quality scoring returned error:', qualityData);
-            }
-        } catch (qualityErr) {
-            console.warn('Quality scoring step failed:', qualityErr);
-        }
-
-        // Step 4: Risk Prediction
-        progressFill.style.width = '85%';
-        progressText.textContent = '🎯 Predicting Risks...';
-
-        try {
-            const riskResp = await fetch(
-                `${API_BASE}/api/risk/predict${buildQuery({
-                    file_path: currentFilePath,
-                    document_id: currentDocumentId,
-                    state: currentState,
-                    project_type: currentProjectType,
-                    project_cost_crores: currentProjectCost
-                })}`,
-                { method: 'POST' }
-            );
-            riskData = await riskResp.json();
-            if (riskResp.ok) {
                 renderRiskPrediction(riskData);
-            } else {
-                console.warn('Risk prediction returned error:', riskData);
+
+                setTimeout(() => switchTab('analysis'), 1500);
+                uploadBtn.disabled = false;
+                ws.close();
             }
-        } catch (riskErr) {
-            console.warn('Risk prediction step failed:', riskErr);
-        }
+        };
 
-        // Done
-        progressFill.style.width = '100%';
-        progressText.textContent = '✅ Analysis Complete! Navigate tabs to view results.';
-
-        setTimeout(() => switchTab('analysis'), 1500);
+        ws.onclose = () => {
+            if (uploadBtn.disabled) {
+                // Closed unexpectedly
+                progressText.textContent = '❌ Connection lost while processing.';
+                progressFill.style.background = 'var(--danger)';
+                uploadBtn.disabled = false;
+            }
+        };
 
     } catch (err) {
         progressText.textContent = `❌ Error: ${err.message}`;
         progressFill.style.background = 'var(--danger)';
         console.error(err);
-    } finally {
         uploadBtn.disabled = false;
     }
-});
+    });
+} else {
+    console.error('Upload form not found');
+}
 
 // ---- Render Analysis Results ----
 function renderAnalysis(data) {
@@ -413,39 +402,6 @@ function renderRiskPrediction(data) {
             </div>`;
 
         renderMonteCarloChart(costSim);
-    }
-
-    // Explainability
-    const explain = report.explainability || {};
-    const explainDiv = document.getElementById('explainability-content');
-    explainDiv.innerHTML = '';
-
-    if (explain.narrative) {
-        explainDiv.innerHTML += `<div style="white-space:pre-line; line-height:1.8; margin-bottom:20px;">${explain.narrative}</div>`;
-    }
-
-    // Risk drivers
-    const drivers = explain.top_risk_drivers || [];
-    if (drivers.length) {
-        explainDiv.innerHTML += '<h4 style="margin:15px 0 10px;">🔴 Top Risk Drivers</h4>';
-        drivers.forEach(d => {
-            explainDiv.innerHTML += `
-                <div class="rec-item critical">
-                    <strong>${d.factor}</strong> — Severity: ${d.severity}
-                </div>`;
-        });
-    }
-
-    // Protective factors
-    const protective = explain.top_protective_factors || [];
-    if (protective.length) {
-        explainDiv.innerHTML += '<h4 style="margin:15px 0 10px;">🟢 Protective Factors</h4>';
-        protective.forEach(p => {
-            explainDiv.innerHTML += `
-                <div class="rec-item" style="border-left-color: var(--emerald);">
-                    ✅ ${p.factor}
-                </div>`;
-        });
     }
 
     // Mitigation
@@ -738,6 +694,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initDashboard();
     renderNeSETUDashboard();
     loadLearningStatus();
+    initializeAdminUser(); // Ensure admin user exists
 });
 
 
@@ -745,9 +702,20 @@ document.addEventListener('DOMContentLoaded', () => {
 // Model Learning Functions
 // ──────────────────────────────────────────
 
+async function initializeAdminUser() {
+    try {
+        const resp = await fetch(`${API_BASE}/api/auth/init-admin`);
+        if (resp.ok) {
+            console.log('✅ Admin user initialized');
+        }
+    } catch (err) {
+        console.log('Admin user check completed');
+    }
+}
+
 async function loadLearningStatus() {
     try {
-        const resp = await fetch(`${API_BASE}/api/learning/status`);
+        const resp = await authFetch(`${API_BASE}/api/learning/status`);
         if (!resp.ok) return;
         const data = await resp.json();
 
@@ -759,13 +727,13 @@ async function loadLearningStatus() {
 
         // Summary
         const summaryDiv = document.getElementById('learning-summary');
-        summaryDiv.innerHTML = `<span style="line-height:1.8;">${data.learning_summary || ''}</span>`;
+        summaryDiv.innerHTML = `<span style="line-height:1.8;">${escapeHtml(data.learning_summary || '')}</span>`;
 
         // Retrain button state
         const retrainMsg = document.getElementById('retrain-message');
         const retrainBtn = document.getElementById('retrain-btn');
         if (data.retrain_recommended) {
-            retrainMsg.innerHTML = `🔄 <strong>${data.new_samples_since_last_train} new DPR(s)</strong> available for training. Retraining is recommended!`;
+            retrainMsg.innerHTML = `🔄 <strong>${escapeHtml(data.new_samples_since_last_train)} new DPR(s)</strong> available for training. Retraining is recommended!`;
             retrainBtn.classList.add('pulse');
         } else if (td.total === 0) {
             retrainMsg.textContent = 'Upload DPRs first to generate training data, then retrain the models.';
@@ -880,7 +848,215 @@ function renderVersionHistory(history) {
     });
 }
 
+// ──────────────────────────────────────────
+// JWT Authentication Logic
+// ──────────────────────────────────────────
+
+let authToken = localStorage.getItem('aiDprToken') || null;
+let currentUser = JSON.parse(localStorage.getItem('aiDprUser') || 'null');
+
+async function authFetch(url, options = {}) {
+    if (!options.headers) options.headers = {};
+    if (authToken) {
+        options.headers['Authorization'] = `Bearer ${authToken}`;
+    }
+    const response = await fetch(url, options);
+    if (response.status === 401 || response.status === 403) {
+        // Token expired or invalid
+        logout();
+        showAuthLogin();
+        throw new Error('Authentication required');
+    }
+    return response;
+}
+
+function updateAuthUI() {
+    const roleSpan = document.getElementById('header-user-role');
+    const indicator = document.getElementById('auth-indicator');
+    const userInfo = document.getElementById('header-user-info');
+    const userNameSpan = document.getElementById('header-user-name');
+    const uploadTabBtn = document.querySelector('[data-tab="upload"]');
+    const authOverlay = document.getElementById('auth-modal-overlay');
+
+    if (currentUser && authToken) {
+        roleSpan.textContent = `${currentUser.role} Access`;
+        indicator.style.backgroundColor = '#4ade80';
+        indicator.style.boxShadow = '0 0 8px #4ade80';
+        userInfo.classList.remove('hidden');
+        userNameSpan.textContent = currentUser.name;
+        authOverlay.classList.add('hidden');
+        
+        // Role based access
+        if (currentUser.role === 'Viewer') {
+            uploadTabBtn.style.display = 'none';
+            if (document.getElementById('tab-upload').classList.contains('active')) {
+                // If viewer is on upload tab, switch to dashboard
+                switchTab('dashboard');
+            }
+        } else {
+            uploadTabBtn.style.display = 'flex';
+        }
+    } else {
+        roleSpan.textContent = 'Not Authenticated';
+        indicator.style.backgroundColor = '#fca5a5';
+        indicator.style.boxShadow = '0 0 8px #fca5a5';
+        userInfo.classList.add('hidden');
+        authOverlay.classList.remove('hidden');
+    }
+}
+
+function showAuthLogin() {
+    document.getElementById('auth-modal-overlay').classList.remove('hidden');
+    document.getElementById('auth-password').value = '';
+    document.getElementById('auth-error').classList.add('hidden');
+    setTimeout(() => document.getElementById('auth-email').focus(), 300);
+}
+
+function toggleAuthPasswordVisibility() {
+    const input = document.getElementById('auth-password');
+    const icon = document.getElementById('auth-password-toggle-icon');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'fas fa-eye-slash';
+    } else {
+        input.type = 'password';
+        icon.className = 'fas fa-eye';
+    }
+}
+
+async function login() {
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value.trim();
+    const errorDiv = document.getElementById('auth-error');
+    const errorText = document.getElementById('auth-error-text');
+    const loginBtn = document.getElementById('auth-login-btn');
+
+    if (!email || !password) {
+        errorDiv.classList.remove('hidden');
+        errorText.textContent = 'Please enter email and password';
+        return;
+    }
+
+    loginBtn.disabled = true;
+    loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Authenticating...';
+    errorDiv.classList.add('hidden');
+
+    try {
+        const formData = new URLSearchParams();
+        formData.append('username', email); // OAuth2 expects username
+        formData.append('password', password);
+
+        const resp = await fetch(`${API_BASE}/api/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData
+        });
+
+        if (!resp.ok) {
+            const err = await resp.json();
+            throw new Error(err.detail || 'Authentication failed');
+        }
+
+        const data = await resp.json();
+        authToken = data.access_token;
+        currentUser = data.user;
+        
+        localStorage.setItem('aiDprToken', authToken);
+        localStorage.setItem('aiDprUser', JSON.stringify(currentUser));
+        
+        updateAuthUI();
+
+    } catch (err) {
+        errorDiv.classList.remove('hidden');
+        errorText.textContent = err.message || 'Invalid credentials';
+        
+        const modal = document.querySelector('.admin-modal');
+        modal.style.animation = 'none';
+        setTimeout(() => { modal.style.animation = 'modalShake 0.4s ease'; }, 10);
+    } finally {
+        loginBtn.disabled = false;
+        loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Authenticate';
+    }
+}
+
+function logout() {
+    authToken = null;
+    currentUser = null;
+    localStorage.removeItem('aiDprToken');
+    localStorage.removeItem('aiDprUser');
+    updateAuthUI();
+}
+
+// Call initially
+updateAuthUI();
+
+// ──────────────────────────────────────────
+// History Tab Logic
+// ──────────────────────────────────────────
+
+async function loadDocumentHistory() {
+    const tbody = document.getElementById('history-table-body');
+    if (!tbody) return;
+
+    tbody.innerHTML = '<tr><td colspan="7" style="padding: 32px; text-align: center; color: var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Loading documents...</td></tr>';
+    
+    try {
+        const resp = await authFetch(`${API_BASE}/api/documents/list?limit=50`);
+        const data = await resp.json();
+        
+        if (!resp.ok) throw new Error(data.detail || 'Errors loading history');
+        
+        if (!data.documents || data.documents.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="padding: 32px; text-align: center; color: var(--text-muted);">No documents processed yet.</td></tr>';
+            return;
+        }
+
+        let html = '';
+        data.documents.forEach(doc => {
+            const dateStr = doc.upload_date ? new Date(doc.upload_date).toLocaleString() : '-';
+            const riskClass = doc.risk_level.includes('High') || doc.risk_level.includes('Critical') ? 'text-danger' : 
+                              doc.risk_level.includes('Medium') ? 'text-warning' : 'text-success';
+            
+            html += `
+                <tr style="border-bottom: 1px solid var(--border-color); font-size: 14px;">
+                    <td style="padding: 12px 16px;">
+                        <input type="checkbox" class="doc-compare-checkbox" value="${doc.id}" data-name="${doc.file_name}" onchange="updateCompareSelection()">
+                    </td>
+                    <td style="padding: 12px 16px; font-weight: 500; color: var(--primary-blue);">${doc.file_name}</td>
+                    <td style="padding: 12px 16px;">${doc.state_name}</td>
+                    <td style="padding: 12px 16px; color: var(--text-muted); font-size: 13px;">${dateStr}</td>
+                    <td style="padding: 12px 16px; font-weight: bold;">${doc.grade}</td>
+                    <td style="padding: 12px 16px;"><span class="${riskClass}">${doc.risk_level}</span></td>
+                    <td style="padding: 12px 16px; text-align: right;">
+                        <button class="btn-primary" style="padding: 4px 8px; font-size: 12px; width: auto;" onclick="loadPastAnalysis('${doc.id}')">View</button>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = html;
+        updateCompareSelection();
+        
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" style="padding: 32px; text-align: center; color: var(--danger);"><i class="fas fa-exclamation-circle"></i> ${escapeHtml(err.message)}</td></tr>`;
+    }
+}
+
+async function loadPastAnalysis(docId) {
+    alert("Loading past analysis data for " + docId + " will populate the tabs.");
+    // In a full implementation, this triggers /api/documents/{id} and repopulates global state
+}
+
+// ──────────────────────────────────────────
+// Retraining Tab Logic
+// ──────────────────────────────────────────
+
 async function retrainModels() {
+    if (!currentUser || currentUser.role !== 'Admin') {
+        alert("Only System Administrators can retrain the models.");
+        return;
+    }
+
     const btn = document.getElementById('retrain-btn');
     const progress = document.getElementById('retrain-progress');
     const progressFill = document.getElementById('retrain-progress-fill');
@@ -892,17 +1068,25 @@ async function retrainModels() {
     resultDiv.classList.add('hidden');
 
     progressFill.style.width = '30%';
-    progressFill.style.background = 'var(--gold)';
+    progressFill.style.background = 'var(--warning)';
     progressText.textContent = '🧠 Training ML models with accumulated DPR data...';
 
     try {
-        const resp = await fetch(`${API_BASE}/api/learning/retrain`, { method: 'POST' });
+        const resp = await authFetch(`${API_BASE}/api/learning/retrain`, {
+            method: 'POST'
+        });
         const data = await resp.json();
 
-        if (!resp.ok) throw new Error(data.detail || 'Training failed');
+        if (!resp.ok) {
+            if (resp.status === 403) {
+                adminPassword = null; // Clear cached password
+                throw new Error('Session expired — please re-authenticate');
+            }
+            throw new Error(data.detail || 'Training failed');
+        }
 
         progressFill.style.width = '100%';
-        progressFill.style.background = 'var(--emerald)';
+        progressFill.style.background = 'var(--accent-emerald)';
         progressText.textContent = '✅ Training complete!';
 
         const models = data.training_report?.models || {};
@@ -911,8 +1095,8 @@ async function retrainModels() {
 
         resultDiv.classList.remove('hidden');
         resultDiv.innerHTML = `
-            <div style="background: var(--emerald-glow); padding: 15px; border-radius: var(--radius-sm); border-left: 4px solid var(--emerald);">
-                <h4 style="color: var(--emerald); margin-bottom: 10px;">🎉 Model v${data.model_version} trained successfully!</h4>
+            <div style="background: #ecfdf5; padding: 15px; border-radius: var(--radius); border-left: 4px solid var(--accent-emerald);">
+                <h4 style="color: var(--accent-emerald); margin-bottom: 10px;">🎉 Model v${data.model_version} trained successfully!</h4>
                 <p><strong>${data.real_samples_used}</strong> real DPR(s) used for training</p>
                 <p>Cost Model R²: <strong>${costR2}</strong> | Risk Classifier Accuracy: <strong>${riskAcc}</strong></p>
                 <p style="color: var(--text-muted); margin-top: 8px;">Future predictions will now use the improved models.</p>
@@ -968,6 +1152,66 @@ async function submitFeedback() {
 
     } catch (err) {
         resultDiv.classList.remove('hidden');
-        resultDiv.innerHTML = `<div style="background:var(--danger-glow);padding:12px;border-radius:var(--radius-sm);border-left:4px solid var(--danger);">❌ ${err.message}</div>`;
+        resultDiv.innerHTML = `<div style="background:var(--danger-glow);padding:12px;border-radius:var(--radius-sm);border-left:4px solid var(--danger);">❌ ${escapeHtml(err.message)}</div>`;
     }
+}
+
+// ──────────────────────────────────────────
+// PDF Export Logic
+// ──────────────────────────────────────────
+
+async function downloadPDF() {
+    if (!currentDocumentId) {
+        alert("No document currently loaded to export.");
+        return;
+    }
+    
+    // UI Feedback
+    const btn = document.getElementById('export-pdf-btn');
+    if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+    
+    const url = `${API_BASE}/api/documents/export/${currentDocumentId}/pdf`;
+    
+    try {
+        const response = await authFetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`Server returned ${response.status}: Failed to generate PDF`);
+        }
+        
+        const blob = await response.blob();
+        
+        let filename = "AI_Evaluation.pdf";
+        const disposition = response.headers.get('Content-Disposition');
+        if (disposition && disposition.indexOf('attachment') !== -1) {
+            const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+            const matches = filenameRegex.exec(disposition);
+            if (matches != null && matches[1]) { 
+                filename = matches[1].replace(/['"]/g, '');
+            }
+        }
+        
+        const blobUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = blobUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+        alert(`Error downloading PDF: ${error.message}`);
+    } finally {
+        if (btn) btn.innerHTML = '<i class="fas fa-file-pdf"></i> Export Original Report';
+    }
+}
+
+function showNotification(message, type = 'info') {
+    console.log(`[${type.toUpperCase()}] ${message}`);
+}
+
+function updateCompareSelection() {
+    // Placeholder for document comparison feature
+    const checkboxes = document.querySelectorAll('.doc-compare-checkbox:checked');
+    console.log(`${checkboxes.length} document(s) selected for comparison`);
 }

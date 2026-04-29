@@ -1,184 +1,180 @@
 # ============================================
 # Seed Reference Data into PostgreSQL
-# Runs on first startup – idempotent
 # ============================================
 
-from sqlalchemy import select
 from loguru import logger
-
-from app.models.database import async_session
-from app.models.db_models import (
-    State, DPRSectionDef, ComplianceRule,
-    ScoringWeight, GradeDefinition,
-)
-
-# ─── Indian States ───
-_STATES = [
-    # (name, code, is_mdoner, region, terrain, risk_factor)
-    ("Andhra Pradesh",      "AP",  False, "South",     "Coastal/Plains", 4.5),
-    ("Arunachal Pradesh",   "AR",  True,  "Northeast", "Mountainous",    7.5),
-    ("Assam",               "AS",  True,  "Northeast", "Plains/Hills",   6.5),
-    ("Bihar",               "BR",  False, "East",      "Plains",         6.0),
-    ("Chhattisgarh",        "CG",  False, "Central",   "Forested",       5.5),
-    ("Goa",                 "GA",  False, "West",      "Coastal",        3.5),
-    ("Gujarat",             "GJ",  False, "West",      "Coastal/Arid",   4.5),
-    ("Haryana",             "HR",  False, "North",     "Plains",         4.0),
-    ("Himachal Pradesh",    "HP",  False, "North",     "Mountainous",    6.0),
-    ("Jharkhand",           "JH",  False, "East",      "Forested/Hills", 6.0),
-    ("Karnataka",           "KA",  False, "South",     "Deccan Plateau", 4.0),
-    ("Kerala",              "KL",  False, "South",     "Coastal/Hills",  4.5),
-    ("Madhya Pradesh",      "MP",  False, "Central",   "Plateau",        5.0),
-    ("Maharashtra",         "MH",  False, "West",      "Mixed",          4.5),
-    ("Manipur",             "MN",  True,  "Northeast", "Hills",          7.0),
-    ("Meghalaya",           "ML",  True,  "Northeast", "Hills/Plateau",  7.0),
-    ("Mizoram",             "MZ",  True,  "Northeast", "Mountainous",    7.5),
-    ("Nagaland",            "NL",  True,  "Northeast", "Mountainous",    7.5),
-    ("Odisha",              "OD",  False, "East",      "Coastal/Plains", 5.5),
-    ("Punjab",              "PB",  False, "North",     "Plains",         4.0),
-    ("Rajasthan",           "RJ",  False, "West",      "Arid/Desert",    5.5),
-    ("Sikkim",              "SK",  True,  "Northeast", "Mountainous",    7.0),
-    ("Tamil Nadu",          "TN",  False, "South",     "Coastal/Plains", 4.5),
-    ("Telangana",           "TS",  False, "South",     "Deccan Plateau", 4.0),
-    ("Tripura",             "TR",  True,  "Northeast", "Hills/Plains",   6.5),
-    ("Uttar Pradesh",       "UP",  False, "North",     "Plains",         5.0),
-    ("Uttarakhand",         "UK",  False, "North",     "Mountainous",    6.0),
-    ("West Bengal",         "WB",  False, "East",      "Plains/Coastal", 5.0),
-]
-
-_MDONER_PROVISIONS = [
-    "90:10 Central-State funding pattern",
-    "Special Category State provisions",
-    "Border Area Development Programme eligibility",
-    "Flood/Landslide vulnerability assessment",
-    "Tribal community impact assessment",
-]
-_MDONER_SECTORS = [
-    "Connectivity", "Tourism", "Power & Energy",
-    "Horticulture", "Education", "Health",
-    "Water Resources", "Skill Development",
-]
-_MDONER_EXTRA = [
-    "Terrain & accessibility assessment",
-    "Tribal/community consultation documentation",
-    "Northeast-specific challenge mitigation plan",
-    "Connectivity infrastructure baseline",
-]
-
-# ─── DPR Sections ───
-_SECTIONS = [
-    ("Executive Summary",                            "executive_summary",          100, 1.0,  True, 1),
-    ("Project Background & Justification",           "project_background",         200, 1.0,  True, 2),
-    ("Project Objectives",                           "project_objectives",         100, 1.0,  True, 3),
-    ("Scope of Work",                                "scope_of_work",              150, 1.0,  True, 4),
-    ("Technical Feasibility",                        "technical_feasibility",      200, 1.2,  True, 5),
-    ("Financial Analysis",                           "financial_analysis",         200, 1.2,  True, 6),
-    ("Cost Estimates",                               "cost_estimates",             150, 1.2,  True, 7),
-    ("Implementation Schedule",                      "implementation_schedule",    100, 1.0,  True, 8),
-    ("Institutional Framework",                      "institutional_framework",    100, 0.8,  True, 9),
-    ("Environmental & Social Impact Assessment",     "esia",                       200, 1.0,  True, 10),
-    ("Risk Assessment & Mitigation",                 "risk_assessment",            150, 1.0,  True, 11),
-    ("Monitoring & Evaluation Framework",            "monitoring_evaluation",      100, 0.8,  True, 12),
-    ("Sustainability Plan",                          "sustainability_plan",        100, 0.8,  True, 13),
-    ("Annexures & Supporting Documents",             "annexures",                   50, 0.5, False, 14),
-]
-
-# ─── Scoring Weights ───
-_WEIGHTS = [
-    ("Section Completeness", 0.25, "Presence and depth of all required DPR sections"),
-    ("Technical Depth",      0.20, "Quality of technical analysis, specifications, and data"),
-    ("Financial Accuracy",   0.20, "Completeness of cost estimates, budget tables, and financial analysis"),
-    ("Compliance",           0.20, "Adherence to central and state government DPR guidelines"),
-    ("Risk Assessment",      0.15, "Quality of risk identification, analysis, and mitigation planning"),
-]
-
-# ─── Grades ───
-_GRADES = [
-    ("A+", 90, 100, "Excellent – Ready for approval"),
-    ("A",  80,  89, "Very Good – Minor improvements recommended"),
-    ("B+", 70,  79, "Good – Some improvements needed"),
-    ("B",  60,  69, "Satisfactory – Multiple improvements needed"),
-    ("C",  50,  59, "Below Average – Significant revision required"),
-    ("D",  40,  49, "Poor – Major revision required"),
-    ("F",   0,  39, "Fail – Complete rework needed"),
-]
-
-# ─── Compliance Rules ───
-_RULES = [
-    ("GOV-001", "documentation", "Mandatory Sections Present",
-     "All mandatory DPR sections must be included", "error", "all"),
-    ("GOV-002", "financial", "Cost Estimate Completeness",
-     "Detailed cost breakdowns required for projects above 10 crores", "error", "all"),
-    ("GOV-003", "environmental", "EIA Clearance Reference",
-     "Environmental Impact Assessment reference must be present", "warning", "all"),
-    ("GOV-004", "risk", "Risk Mitigation Plan",
-     "At least 3 risk mitigation strategies must be documented", "warning", "all"),
-    ("GOV-005", "schedule", "Implementation Timeline",
-     "Project milestones and Gantt chart or equivalent required", "warning", "all"),
-    ("NER-001", "mdoner", "Tribal Impact Assessment",
-     "Tribal community impact analysis required for NE states", "error", "mdoner"),
-    ("NER-002", "mdoner", "Terrain Assessment",
-     "Detailed terrain and accessibility study required", "warning", "mdoner"),
-    ("NER-003", "mdoner", "Funding Pattern",
-     "90:10 central-state funding pattern documentation", "error", "mdoner"),
-]
 
 
 async def seed_reference_data():
-    """Populate reference tables if they are empty. Idempotent."""
-    async with async_session() as session:
-        async with session.begin():
-            # ── States ──
-            existing = (await session.execute(select(State.id).limit(1))).first()
-            if not existing:
-                for name, code, mdoner, region, terrain, rf in _STATES:
-                    extras = {}
-                    if mdoner:
-                        extras = {
-                            "special_provisions": _MDONER_PROVISIONS,
-                            "priority_sectors": _MDONER_SECTORS,
-                            "additional_requirements": _MDONER_EXTRA,
-                        }
-                    session.add(State(
-                        name=name, code=code, is_mdoner=mdoner,
-                        region=region, terrain=terrain, risk_factor=rf,
-                        **extras,
-                    ))
-                logger.info(f"  Seeded {len(_STATES)} states")
+    """Seed initial reference data if collections are empty."""
+    await _seed_states()
+    await _seed_sections()
+    await _seed_scoring_weights()
+    await _seed_grade_definitions()
+    await _seed_compliance_rules()
+    await _seed_admin_user()
+    logger.info("✅ PostgreSQL reference data verified / seeded")
 
-            # ── DPR Sections ──
-            existing = (await session.execute(select(DPRSectionDef.id).limit(1))).first()
-            if not existing:
-                for name, key, min_wc, weight, mandatory, idx in _SECTIONS:
-                    session.add(DPRSectionDef(
-                        name=name, key=key, min_word_count=min_wc,
-                        weight=weight, is_mandatory=mandatory, order_index=idx,
-                    ))
-                logger.info(f"  Seeded {len(_SECTIONS)} DPR sections")
 
-            # ── Scoring Weights ──
-            existing = (await session.execute(select(ScoringWeight.id).limit(1))).first()
-            if not existing:
-                for criterion, weight, desc in _WEIGHTS:
-                    session.add(ScoringWeight(
-                        criterion=criterion, weight=weight, description=desc,
-                    ))
-                logger.info(f"  Seeded {len(_WEIGHTS)} scoring weights")
+async def _seed_states():
+    if _has_docs(col):
+        return
+    logger.info("Seeding states…")
+    states = [
+        {"name": "Andhra Pradesh", "code": "AP", "is_mdoner": False, "region": "South", "terrain": "mixed", "risk_factor": 4.0},
+        {"name": "Arunachal Pradesh", "code": "AR", "is_mdoner": True, "region": "North East", "terrain": "mountainous", "risk_factor": 8.0,
+         "special_provisions": {"funding_pattern": "90:10", "tribal_provisions": True},
+         "priority_sectors": ["connectivity", "education", "health"]},
+        {"name": "Assam", "code": "AS", "is_mdoner": True, "region": "North East", "terrain": "flood-plain", "risk_factor": 7.0,
+         "special_provisions": {"funding_pattern": "90:10", "flood_risk": True},
+         "priority_sectors": ["flood_management", "connectivity", "industry"]},
+        {"name": "Bihar", "code": "BR", "is_mdoner": False, "region": "East", "terrain": "plain", "risk_factor": 5.0},
+        {"name": "Chhattisgarh", "code": "CG", "is_mdoner": False, "region": "Central", "terrain": "mixed", "risk_factor": 5.0},
+        {"name": "Goa", "code": "GA", "is_mdoner": False, "region": "West", "terrain": "plain", "risk_factor": 2.0},
+        {"name": "Gujarat", "code": "GJ", "is_mdoner": False, "region": "West", "terrain": "mixed", "risk_factor": 3.0},
+        {"name": "Haryana", "code": "HR", "is_mdoner": False, "region": "North", "terrain": "plain", "risk_factor": 3.0},
+        {"name": "Himachal Pradesh", "code": "HP", "is_mdoner": False, "region": "North", "terrain": "hilly", "risk_factor": 6.0},
+        {"name": "Jharkhand", "code": "JH", "is_mdoner": False, "region": "East", "terrain": "plateau", "risk_factor": 5.0},
+        {"name": "Karnataka", "code": "KA", "is_mdoner": False, "region": "South", "terrain": "mixed", "risk_factor": 3.0},
+        {"name": "Kerala", "code": "KL", "is_mdoner": False, "region": "South", "terrain": "mixed", "risk_factor": 4.0},
+        {"name": "Madhya Pradesh", "code": "MP", "is_mdoner": False, "region": "Central", "terrain": "mixed", "risk_factor": 5.0},
+        {"name": "Maharashtra", "code": "MH", "is_mdoner": False, "region": "West", "terrain": "mixed", "risk_factor": 3.0},
+        {"name": "Manipur", "code": "MN", "is_mdoner": True, "region": "North East", "terrain": "hilly", "risk_factor": 7.5,
+         "special_provisions": {"funding_pattern": "90:10", "ethnic_harmony": True},
+         "priority_sectors": ["connectivity", "sports", "handicrafts"]},
+        {"name": "Meghalaya", "code": "ML", "is_mdoner": True, "region": "North East", "terrain": "hilly", "risk_factor": 7.0,
+         "special_provisions": {"funding_pattern": "90:10", "sixth_schedule": True},
+         "priority_sectors": ["tourism", "mining", "agriculture"]},
+        {"name": "Mizoram", "code": "MZ", "is_mdoner": True, "region": "North East", "terrain": "mountainous", "risk_factor": 7.5,
+         "special_provisions": {"funding_pattern": "90:10"},
+         "priority_sectors": ["bamboo", "connectivity", "tourism"]},
+        {"name": "Nagaland", "code": "NL", "is_mdoner": True, "region": "North East", "terrain": "mountainous", "risk_factor": 8.0,
+         "special_provisions": {"funding_pattern": "90:10", "tribal_council": True},
+         "priority_sectors": ["connectivity", "tourism", "horticulture"]},
+        {"name": "Odisha", "code": "OD", "is_mdoner": False, "region": "East", "terrain": "mixed", "risk_factor": 5.0},
+        {"name": "Punjab", "code": "PB", "is_mdoner": False, "region": "North", "terrain": "plain", "risk_factor": 3.0},
+        {"name": "Rajasthan", "code": "RJ", "is_mdoner": False, "region": "West", "terrain": "plain", "risk_factor": 4.0},
+        {"name": "Sikkim", "code": "SK", "is_mdoner": True, "region": "North East", "terrain": "mountainous", "risk_factor": 7.0,
+         "special_provisions": {"funding_pattern": "90:10", "ecological_sensitivity": True},
+         "priority_sectors": ["tourism", "organic_farming", "hydropower"]},
+        {"name": "Tamil Nadu", "code": "TN", "is_mdoner": False, "region": "South", "terrain": "mixed", "risk_factor": 3.0},
+        {"name": "Telangana", "code": "TG", "is_mdoner": False, "region": "South", "terrain": "plateau", "risk_factor": 3.0},
+        {"name": "Tripura", "code": "TR", "is_mdoner": True, "region": "North East", "terrain": "hilly", "risk_factor": 6.5,
+         "special_provisions": {"funding_pattern": "90:10", "border_area": True},
+         "priority_sectors": ["rubber", "connectivity", "IT"]},
+        {"name": "Uttar Pradesh", "code": "UP", "is_mdoner": False, "region": "North", "terrain": "plain", "risk_factor": 5.0},
+        {"name": "Uttarakhand", "code": "UK", "is_mdoner": False, "region": "North", "terrain": "mountainous", "risk_factor": 6.0},
+        {"name": "West Bengal", "code": "WB", "is_mdoner": False, "region": "East", "terrain": "mixed", "risk_factor": 4.0},
+    ]
+    batch = db.batch()
+    for s in states:
+        batch.set(col.document(s["name"]), s)
+    batch.commit()
 
-            # ── Grades ──
-            existing = (await session.execute(select(GradeDefinition.id).limit(1))).first()
-            if not existing:
-                for grade, lo, hi, desc in _GRADES:
-                    session.add(GradeDefinition(
-                        grade=grade, min_score=lo, max_score=hi, description=desc,
-                    ))
-                logger.info(f"  Seeded {len(_GRADES)} grade definitions")
 
-            # ── Compliance Rules ──
-            existing = (await session.execute(select(ComplianceRule.id).limit(1))).first()
-            if not existing:
-                for code, cat, title, desc, sev, applies in _RULES:
-                    session.add(ComplianceRule(
-                        rule_code=code, category=cat, title=title,
-                        description=desc, severity=sev, applies_to=applies,
-                    ))
-                logger.info(f"  Seeded {len(_RULES)} compliance rules")
+async def _seed_sections():
+    col = db.collection("dpr_section_defs")
+    if _has_docs(col):
+        return
+    logger.info("Seeding DPR section definitions…")
+    sections = [
+        {"key": "executive_summary", "name": "Executive Summary", "min_word_count": 200, "weight": 1.0, "is_mandatory": True, "order_index": 1},
+        {"key": "project_background", "name": "Project Background & Justification", "min_word_count": 300, "weight": 1.0, "is_mandatory": True, "order_index": 2},
+        {"key": "objectives", "name": "Project Objectives", "min_word_count": 150, "weight": 0.8, "is_mandatory": True, "order_index": 3},
+        {"key": "scope_of_work", "name": "Scope of Work", "min_word_count": 300, "weight": 1.0, "is_mandatory": True, "order_index": 4},
+        {"key": "technical_feasibility", "name": "Technical Feasibility", "min_word_count": 500, "weight": 1.2, "is_mandatory": True, "order_index": 5},
+        {"key": "financial_analysis", "name": "Financial Analysis", "min_word_count": 400, "weight": 1.2, "is_mandatory": True, "order_index": 6},
+        {"key": "cost_estimates", "name": "Cost Estimates", "min_word_count": 300, "weight": 1.2, "is_mandatory": True, "order_index": 7},
+        {"key": "implementation_schedule", "name": "Implementation Schedule", "min_word_count": 200, "weight": 1.0, "is_mandatory": True, "order_index": 8},
+        {"key": "institutional_framework", "name": "Institutional Framework", "min_word_count": 200, "weight": 0.8, "is_mandatory": True, "order_index": 9},
+        {"key": "environmental_impact", "name": "Environmental & Social Impact Assessment", "min_word_count": 300, "weight": 1.0, "is_mandatory": True, "order_index": 10},
+        {"key": "risk_assessment", "name": "Risk Assessment & Mitigation", "min_word_count": 250, "weight": 1.0, "is_mandatory": True, "order_index": 11},
+        {"key": "monitoring_evaluation", "name": "Monitoring & Evaluation Framework", "min_word_count": 200, "weight": 0.8, "is_mandatory": True, "order_index": 12},
+        {"key": "sustainability", "name": "Sustainability Plan", "min_word_count": 200, "weight": 0.8, "is_mandatory": True, "order_index": 13},
+        {"key": "annexures", "name": "Annexures & Supporting Documents", "min_word_count": 100, "weight": 0.5, "is_mandatory": False, "order_index": 14},
+    ]
+    batch = db.batch()
+    for s in sections:
+        batch.set(col.document(s["key"]), s)
+    batch.commit()
+
+
+async def _seed_scoring_weights():
+    col = db.collection("scoring_weights")
+    if _has_docs(col):
+        return
+    logger.info("Seeding scoring weights…")
+    weights = [
+        {"criterion": "section_completeness", "weight": 0.25, "description": "Presence and depth of required DPR sections", "is_active": True},
+        {"criterion": "technical_depth", "weight": 0.20, "description": "Technical detail and quantitative data quality", "is_active": True},
+        {"criterion": "financial_accuracy", "weight": 0.20, "description": "Financial analysis completeness and accuracy", "is_active": True},
+        {"criterion": "compliance", "weight": 0.20, "description": "Government guideline compliance", "is_active": True},
+        {"criterion": "risk_assessment", "weight": 0.15, "description": "Risk identification and mitigation quality", "is_active": True},
+    ]
+    batch = db.batch()
+    for w in weights:
+        batch.set(col.document(w["criterion"]), w)
+    batch.commit()
+
+
+async def _seed_grade_definitions():
+    col = db.collection("grade_definitions")
+    if _has_docs(col):
+        return
+    logger.info("Seeding grade definitions…")
+    grades = [
+        {"grade": "A+", "min_score": 90, "max_score": 100, "description": "Excellent — Ready for approval", "is_active": True},
+        {"grade": "A", "min_score": 80, "max_score": 89, "description": "Very Good — Minor improvements recommended", "is_active": True},
+        {"grade": "B+", "min_score": 70, "max_score": 79, "description": "Good — Some improvements needed", "is_active": True},
+        {"grade": "B", "min_score": 60, "max_score": 69, "description": "Satisfactory — Multiple improvements needed", "is_active": True},
+        {"grade": "C", "min_score": 50, "max_score": 59, "description": "Below Average — Significant revision required", "is_active": True},
+        {"grade": "D", "min_score": 40, "max_score": 49, "description": "Poor — Major revision required", "is_active": True},
+        {"grade": "F", "min_score": 0, "max_score": 39, "description": "Fail — Complete rework needed", "is_active": True},
+    ]
+    batch = db.batch()
+    for g in grades:
+        batch.set(col.document(g["grade"]), g)
+    batch.commit()
+
+
+async def _seed_compliance_rules():
+    col = db.collection("compliance_rules")
+    if _has_docs(col):
+        return
+    logger.info("Seeding compliance rules…")
+    rules = [
+        {"rule_code": "GOV-001", "category": "central", "title": "Executive Summary Required", "severity": "critical", "applies_to": "all", "is_active": True},
+        {"rule_code": "GOV-002", "category": "central", "title": "Financial Analysis Required", "severity": "critical", "applies_to": "all", "is_active": True},
+        {"rule_code": "GOV-003", "category": "central", "title": "Cost Estimates Required", "severity": "critical", "applies_to": "all", "is_active": True},
+        {"rule_code": "GOV-004", "category": "central", "title": "Implementation Schedule Required", "severity": "warning", "applies_to": "all", "is_active": True},
+        {"rule_code": "GOV-005", "category": "central", "title": "Environmental Impact Required", "severity": "warning", "applies_to": "all", "is_active": True},
+        {"rule_code": "NER-001", "category": "ner", "title": "90:10 Funding Pattern Declaration", "severity": "critical", "applies_to": "mdoner", "is_active": True},
+        {"rule_code": "NER-002", "category": "ner", "title": "Tribal Impact Assessment", "severity": "critical", "applies_to": "mdoner", "is_active": True},
+        {"rule_code": "NER-003", "category": "ner", "title": "State-specific Provisions", "severity": "warning", "applies_to": "mdoner", "is_active": True},
+    ]
+    batch = db.batch()
+    for r in rules:
+        batch.set(col.document(r["rule_code"]), r)
+    batch.commit()
+
+
+def _has_docs(col_ref) -> bool:
+    """Check if collection already has documents (idempotent seeding)."""
+    return len(list(col_ref.limit(1).stream())) > 0
+
+async def _seed_admin_user():
+    col = db.collection("users")
+    if _has_docs(col):
+        return
+    logger.info("Seeding initial admin user…")
+    from app.services import auth_service
+    from config.settings import settings
+    try:
+        await auth_service.create_user(
+            email="admin@aidpr.gov.in",
+            password=settings.ADMIN_PASSWORD,
+            name="System Administrator",
+            role="Admin"
+        )
+    except ValueError:
+        pass  # User already exists

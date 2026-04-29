@@ -88,7 +88,6 @@ class RiskPredictionResponse(BaseModel):
     delay_analysis: dict
     risk_classification: dict
     monte_carlo_simulation: dict
-    explainability: dict
     mitigation_strategies: list
 
 

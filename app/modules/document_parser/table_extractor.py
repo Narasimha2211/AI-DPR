@@ -72,7 +72,7 @@ class TableExtractor:
 
             table_entry = {
                 "page_number": table_info.get("page_number", 0),
-                "data": cleaned,
+                "data": [{"cells": row} for row in cleaned],
                 "rows": len(cleaned),
                 "cols": len(cleaned[0]) if cleaned else 0,
                 "headers": cleaned[0] if cleaned else [],

@@ -1,44 +1,18 @@
 # ============================================
-# Database Configuration & Session
+# Database Compatibility Layer (PostgreSQL)
+# ============================================
+# This file provides backward-compatible imports
+# for existing code that references database.py.
+# Actual database operations use PostgreSQL via
+# config/postgres_config.py
 # ============================================
 
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from sqlalchemy.orm import DeclarativeBase
 
-from config.settings import settings
-
-
-engine = create_async_engine(
-    settings.DATABASE_URL,
-    echo=settings.DATABASE_ECHO,
-    future=True
-)
-
-async_session = async_sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False
-)
-
-
-class Base(DeclarativeBase):
-    pass
-
-
-async def get_db() -> AsyncSession:
-    """Dependency for FastAPI to get database session."""
-    async with async_session() as session:
-        try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
-        finally:
-            await session.close()
+async def get_db():
+    """Compatibility stub – routes that still use Depends(get_db)."""
+    yield None
 
 
 async def init_db():
-    """Initialize database tables."""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    """No-op: PostgreSQL tables are created on startup."""
+    pass

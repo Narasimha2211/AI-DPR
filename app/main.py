@@ -6,6 +6,7 @@
 # ============================================
 
 from contextlib import asynccontextmanager
+import os
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,8 +15,7 @@ from fastapi.responses import HTMLResponse, FileResponse
 from loguru import logger
 
 from config.settings import settings, BASE_DIR
-from app.models.database import init_db
-from app.api.routes import upload, analysis, scoring, risk, dashboard, learning
+from app.api.routes import upload, analysis, analysis_detail, scoring, risk, dashboard, learning, auth, documents, ws
 
 
 @asynccontextmanager
@@ -27,14 +27,9 @@ async def lifespan(app: FastAPI):
     logger.info(f"📋 AI DPR Analysis System – PostgreSQL backed")
     logger.info("=" * 60)
 
-    # Initialize database (create tables if not exist)
-    await init_db()
-    logger.info("✅ PostgreSQL database initialized")
-
-    # Seed reference data on first run
-    from app.services.seed import seed_reference_data
-    await seed_reference_data()
-    logger.info("✅ Reference data verified / seeded")
+    # Initialize PostgreSQL database
+    from config.postgres_config import init_db
+    init_db()
 
     yield
 
@@ -48,18 +43,20 @@ app = FastAPI(
     version=settings.APP_VERSION,
     description=settings.APP_DESCRIPTION,
     lifespan=lifespan,
-    docs_url="/docs",
-    redoc_url="/redoc"
+    docs_url="/docs" if settings.DEBUG else None,
+    redoc_url="/redoc" if settings.DEBUG else None,
 )
 
-# CORS Middleware
+# CORS Middleware — restrict origins
+_cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:8000,http://127.0.0.1:8000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[o.strip() for o in _cors_origins],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["Authorization", "Content-Type"],
 )
+
 
 # Mount static files for frontend
 frontend_path = BASE_DIR / "frontend"
@@ -69,10 +66,14 @@ if frontend_path.exists():
 # Register API routers
 app.include_router(upload.router)
 app.include_router(analysis.router)
+app.include_router(analysis_detail.router)
 app.include_router(scoring.router)
 app.include_router(risk.router)
 app.include_router(dashboard.router)
 app.include_router(learning.router)
+app.include_router(auth.router)
+app.include_router(documents.router)
+app.include_router(ws.router)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -89,8 +90,6 @@ async def root():
             <p>AI-Powered Detailed Project Report Analysis for Indian Government Projects</p>
             <br>
             <a href="/docs" style="color: #60a5fa; font-size: 18px;">📖 API Documentation</a>
-            <br><br>
-            <a href="/redoc" style="color: #60a5fa; font-size: 18px;">📚 ReDoc</a>
         </body>
     </html>
     """)
@@ -104,6 +103,7 @@ async def health_check():
         "status": "healthy",
         "app": settings.APP_NAME,
         "version": settings.APP_VERSION,
+        "database": "PostgreSQL",
         "timestamp": datetime.utcnow().isoformat()
     }
 

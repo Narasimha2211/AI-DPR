@@ -104,6 +104,7 @@ class DPRDocument(Base):
     file_path: Mapped[str] = mapped_column(String(500), nullable=False)
     file_size_kb: Mapped[Optional[float]] = mapped_column(Float, default=None)
     file_format: Mapped[Optional[str]] = mapped_column(String(10), default=None)
+    file_hash: Mapped[Optional[str]] = mapped_column(String(64), default=None, index=True)
     state_id: Mapped[Optional[int]] = mapped_column(ForeignKey("states.id"), default=None, index=True)
     state_name: Mapped[Optional[str]] = mapped_column(String(100), default=None)
     project_type: Mapped[Optional[str]] = mapped_column(String(100), default=None)

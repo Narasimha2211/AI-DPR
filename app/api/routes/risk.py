@@ -6,16 +6,18 @@ import time
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Query, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
 from loguru import logger
+from sqlalchemy.orm import Session
+from typing import Optional
 
-from app.models.database import get_db
-from app.services import db_service
+from config.postgres_config import get_db
+from app.services import postgres_db_service as db_service
+from app.api.dependencies import get_current_user
+from app.api.security import validate_file_path
 from app.modules.document_parser.pdf_extractor import PDFExtractor
 from app.modules.document_parser.nlp_processor import NLPProcessor
 from app.modules.document_parser.table_extractor import TableExtractor
 from app.modules.quality_scorer.quality_report import QualityScorer
-from typing import Optional
 from app.modules.risk_predictor.risk_analyzer import RiskAnalyzer
 from app.services.learning_service import extract_training_sample
 
@@ -35,7 +37,8 @@ async def predict_risk(
     state: Optional[str] = Query(None, description="Indian state name"),
     project_type: Optional[str] = Query(None, description="Project type"),
     project_cost_crores: Optional[str] = Query(None, description="Estimated cost in crores"),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Predict project risks from DPR analysis.
@@ -51,9 +54,8 @@ async def predict_risk(
         except ValueError:
             cost_value = None
 
-    file_path_obj = Path(file_path)
-    if not file_path_obj.exists():
-        raise HTTPException(status_code=404, detail="File not found")
+    # Security: validate path is within uploads directory
+    file_path_obj = validate_file_path(file_path)
 
     t0 = time.time()
 
@@ -98,9 +100,9 @@ async def predict_risk(
 
         # Persist to PostgreSQL
         if document_id:
-            doc = await db_service.get_document(db, document_id)
+            doc = db_service.get_document(db, document_id)
             if doc:
-                await db_service.save_risk_assessment(db, document_id, risk_report)
+                db_service.save_risk_assessment(db, document_id, risk_report)
                 # Save training sample for incremental learning
                 sample = extract_training_sample(
                     nlp_analysis=nlp_analysis,
@@ -111,16 +113,18 @@ async def predict_risk(
                     project_type=project_type,
                     project_cost=cost_value,
                 )
-                await db_service.save_training_sample(
-                    db, document_id,
+                db_service.save_training_data(
+                    db,
+                    document_id,
                     features=sample["features"],
                     labels=sample["labels"],
                     metadata_info=sample["metadata"],
                 )
 
         duration_ms = (time.time() - t0) * 1000
-        await db_service.log_action(
-            db, action="risk_predict", document_id=document_id, state=state,
+        db_service.log_action(
+            db,
+            action="risk_predict", document_id=document_id, state=state,
             details={"risk_level": risk_report.get("risk_summary", {}).get("overall_risk_level")},
             duration_ms=duration_ms,
         )
@@ -146,7 +150,8 @@ async def full_dpr_analysis(
     state: Optional[str] = Query(None),
     project_type: Optional[str] = Query(None),
     project_cost_crores: Optional[str] = Query(None),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Run complete end-to-end DPR analysis.
@@ -162,9 +167,8 @@ async def full_dpr_analysis(
         except ValueError:
             cost_value = None
 
-    file_path_obj = Path(file_path)
-    if not file_path_obj.exists():
-        raise HTTPException(status_code=404, detail="File not found")
+    # Security: validate path is within uploads directory
+    file_path_obj = validate_file_path(file_path)
 
     t0 = time.time()
 
@@ -220,15 +224,16 @@ async def full_dpr_analysis(
 
         # ── Persist everything to PostgreSQL ──
         if document_id:
-            doc = await db_service.get_document(db, document_id)
+            doc = db_service.get_document(db, document_id)
             if doc:
-                await db_service.save_analysis(
-                    db, document_id,
+                db_service.save_analysis(
+                    db,
+                    document_id,
                     nlp_result=nlp_analysis,
                     table_analysis=table_analysis,
                 )
-                await db_service.save_quality_score(db, document_id, quality_report)
-                await db_service.save_risk_assessment(
+                db_service.save_quality_score(db, document_id, quality_report)
+                db_service.save_risk_assessment(
                     db, document_id, risk_report, verdict=verdict,
                 )
                 # Save training sample for incremental learning
@@ -241,8 +246,9 @@ async def full_dpr_analysis(
                     project_type=project_type,
                     project_cost=cost_value,
                 )
-                await db_service.save_training_sample(
-                    db, document_id,
+                db_service.save_training_data(
+                    db,
+                    document_id,
                     features=sample["features"],
                     labels=sample["labels"],
                     metadata_info=sample["metadata"],
@@ -251,13 +257,14 @@ async def full_dpr_analysis(
         # Check MDoNER status from DB
         is_mdoner = False
         if state:
-            db_state = await db_service.get_state_by_name(db, state)
+            db_state = db_service.get_state_by_name(db, state)
             if db_state:
                 is_mdoner = db_state.is_mdoner
 
         duration_ms = (time.time() - t0) * 1000
-        await db_service.log_action(
-            db, action="full_analysis", document_id=document_id, state=state,
+        db_service.log_action(
+            db,
+            action="full_analysis", document_id=document_id, state=state,
             details={"verdict": verdict.get("verdict")}, duration_ms=duration_ms,
         )
 
@@ -324,4 +331,3 @@ def _generate_verdict(quality_report: dict, compliance_report: dict, risk_report
         "risk_level": risk_level,
         "cost_overrun_risk": cost_risk
     }
-

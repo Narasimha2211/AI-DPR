@@ -6,12 +6,15 @@
 import asyncio
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, HTTPException, Query, Header, Depends
 from loguru import logger
+from sqlalchemy.orm import Session
 
-from app.models.database import get_db
-from app.services import db_service
+from config.settings import settings as app_settings
+from config.postgres_config import get_db
+from app.api.dependencies import get_current_admin_user
+
+from app.services import postgres_db_service as db_service
 from app.services.learning_service import (
     retrain_models,
     get_model_files_info,
@@ -21,7 +24,7 @@ router = APIRouter(prefix="/api/learning", tags=["Model Learning"])
 
 
 @router.get("/status")
-async def get_learning_status(db: AsyncSession = Depends(get_db)):
+async def get_learning_status(db: Session = Depends(get_db)):
     """
     Get the current model learning status:
     - How many DPRs the model has learned from
@@ -29,10 +32,10 @@ async def get_learning_status(db: AsyncSession = Depends(get_db)):
     - Whether retraining is recommended
     """
     # Training data stats
-    td_counts = await db_service.get_training_data_count(db)
+    td_counts = db_service.get_training_data_count(db)
 
     # Model versions
-    versions = await db_service.get_model_versions(db, limit=10)
+    versions = db_service.get_model_versions(db, limit=10)
     version_history = []
     for v in versions:
         version_history.append({
@@ -43,11 +46,11 @@ async def get_learning_status(db: AsyncSession = Depends(get_db)):
             "cost_metrics": v.cost_model_metrics,
             "delay_metrics": v.delay_model_metrics,
             "risk_metrics": v.risk_model_metrics,
-            "trained_at": v.trained_at.isoformat() if v.trained_at else None,
+            "trained_at": v.trained_at.isoformat() if hasattr(v.trained_at, 'isoformat') else str(v.trained_at) if v.trained_at else None,
         })
 
     # Latest model info
-    latest = await db_service.get_latest_model_version(db)
+    latest = db_service.get_latest_model_version(db)
     model_files = get_model_files_info()
 
     # Check if retraining is recommended
@@ -68,21 +71,21 @@ async def get_learning_status(db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/retrain")
-async def trigger_retrain(db: AsyncSession = Depends(get_db)):
+async def trigger_retrain(db: Session = Depends(get_db), current_user: dict = Depends(get_current_admin_user)):
     """
     Trigger model retraining using all accumulated training data.
     Combines real DPR data (weighted higher) with synthetic augmentation.
     The more DPRs you upload, the smarter the model gets.
     """
     # Get all training data
-    all_td = await db_service.get_all_training_data(db)
+    all_td = db_service.get_all_training_data(db)
 
     training_rows = []
     for td in all_td:
         training_rows.append({
             "features": td.features or {},
             "labels": td.labels or {},
-            "is_user_corrected": td.is_user_corrected,
+            "is_user_corrected": td.is_user_corrected if hasattr(td, 'is_user_corrected') else False,
         })
 
     logger.info(f"🧠 Retraining with {len(training_rows)} real samples...")
@@ -96,7 +99,7 @@ async def trigger_retrain(db: AsyncSession = Depends(get_db)):
 
     # Save model version to DB
     report["real_samples"] = len(training_rows)
-    mv = await db_service.save_model_version(db, report)
+    mv = db_service.save_model_version(db, report)
 
     # Reload models in the risk analyzer
     try:
@@ -106,7 +109,7 @@ async def trigger_retrain(db: AsyncSession = Depends(get_db)):
     except Exception as e:
         logger.warning(f"Model reload warning: {e}")
 
-    await db_service.log_action(
+    db_service.log_action(
         db,
         action="model_retrain",
         details={
@@ -134,14 +137,14 @@ async def submit_feedback(
     actual_quality_score: Optional[float] = Query(None, description="Corrected quality score (0-100)"),
     is_accurate: Optional[bool] = Query(None, description="Was the prediction accurate?"),
     comment: Optional[str] = Query(None, description="Optional comment"),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     """
     Submit feedback on model predictions for a DPR.
     This creates ground-truth labels that improve future predictions.
     The more feedback you provide, the better the model gets.
     """
-    doc = await db_service.get_document(db, document_id)
+    doc = db_service.get_document(db, document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
 
@@ -161,10 +164,10 @@ async def submit_feedback(
         corrected_labels["quality_score"] = actual_quality_score
 
     # Update training data labels
-    updated = await db_service.update_training_labels(db, document_id, corrected_labels)
+    updated = db_service.update_training_labels(db, document_id, corrected_labels)
 
     # Also save as user feedback
-    await db_service.create_feedback(
+    db_service.create_feedback(
         db,
         document_id=document_id,
         feedback_type="prediction_correction",
@@ -175,7 +178,7 @@ async def submit_feedback(
         corrected_data=corrected_labels,
     )
 
-    await db_service.log_action(
+    db_service.log_action(
         db,
         action="learning_feedback",
         document_id=document_id,
@@ -194,10 +197,10 @@ async def submit_feedback(
 @router.get("/history")
 async def get_training_history(
     limit: int = Query(20, description="Number of versions to return"),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     """Get the full model training history showing improvement over time."""
-    versions = await db_service.get_model_versions(db, limit=limit)
+    versions = db_service.get_model_versions(db, limit=limit)
 
     history = []
     for v in versions:
@@ -220,6 +223,120 @@ async def get_training_history(
         history.append(entry)
 
     return {"history": history, "total_versions": len(history)}
+
+
+@router.post("/backfill-training-data")
+async def backfill_training_data(
+    db: Session = Depends(get_db),
+    admin_user = Depends(get_current_admin_user),
+):
+    """
+    Backfill training data for existing documents that were analyzed 
+    before the save_training_data() function was added.
+    """
+    from app.services.learning_service import extract_training_sample
+    from sqlalchemy import text
+    
+    try:
+        # Query for document IDs with analysis but no training data
+        query = text("""
+            SELECT d.id FROM dpr_documents d
+            JOIN dpr_analyses a ON d.id = a.document_id
+            WHERE d.id NOT IN (SELECT COALESCE(document_id, 0) FROM training_data)
+            GROUP BY d.id
+        """)
+        result = db.execute(query)
+        doc_ids = [row[0] for row in result]
+        
+        backfilled_count = 0
+        errors = []
+        
+        for doc_id in doc_ids:
+            try:
+                # Query analysis data with all columns available
+                analysis_query = text("""
+                    SELECT * FROM dpr_analyses WHERE document_id = :doc_id
+                """)
+                analysis_row_dict = db.execute(analysis_query, {"doc_id": doc_id}).mappings().first()
+                
+                if not analysis_row_dict:
+                    continue
+                
+                # Query quality score
+                quality_query = text("""
+                    SELECT composite_score, grade, compliance_level FROM quality_scores 
+                    WHERE document_id = :doc_id
+                """)
+                quality_row = db.execute(quality_query, {"doc_id": doc_id}).first()
+                
+                # Query risk assessment
+                risk_query = text("""
+                    SELECT overall_risk_level, cost_overrun_probability, delay_probability
+                    FROM risk_assessments WHERE document_id = :doc_id
+                """)
+                risk_row = db.execute(risk_query, {"doc_id": doc_id}).first()
+                
+                # Build quality and risk dicts from query results
+                quality_dict = None
+                if quality_row:
+                    quality_dict = {
+                        "composite_score": quality_row[0] or 0,
+                        "grade": quality_row[1] or 'F',
+                        "compliance_level": quality_row[2] or 'LOW'
+                    }
+                
+                risk_dict = None
+                if risk_row:
+                    risk_dict = {
+                        "risk_summary": {
+                            "overall_risk_level": risk_row[0] or 'Medium',
+                            "cost_overrun_probability": risk_row[1] or 50,
+                            "delay_probability": risk_row[2] or 50
+                        }
+                    }
+                
+                # analysis_row_dict already contains full_nlp_result - use it as is
+                nlp_analysis = analysis_row_dict.get('full_nlp_result') or {}
+                
+                # Extract training sample using dict parameters
+                training_sample = extract_training_sample(
+                    nlp_analysis=nlp_analysis,
+                    quality_report=quality_dict,
+                    risk_report=risk_dict
+                )
+                
+                if training_sample:
+                    # Save to training data
+                    db_service.save_training_data(
+                        db=db,
+                        document_id=doc_id,
+                        features=training_sample.get("features", {}),
+                        labels=training_sample.get("labels", {}),
+                        metadata_info={"source": "backfill_migration"},
+                        is_user_corrected=False
+                    )
+                    backfilled_count += 1
+                    logger.info(f"✅ Backfilled training data for document {doc_id}")
+                        
+            except Exception as e:
+                error_msg = f"Failed to backfill document {doc_id}: {str(e)}"
+                errors.append(error_msg)
+                logger.error(error_msg)
+        
+        return {
+            "success": True,
+            "backfilled_count": backfilled_count,
+            "total_docs_processed": len(doc_ids),
+            "errors": errors if errors else None,
+            "message": f"✅ Successfully backfilled training data for {backfilled_count} document(s)"
+        }
+        
+    except Exception as e:
+        logger.error(f"Backfill failed: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Backfill operation failed: {str(e)}"
+        )
 
 
 def _build_learning_summary(td_counts: dict, latest_version, new_samples: int) -> str:

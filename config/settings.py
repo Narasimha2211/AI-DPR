@@ -2,10 +2,20 @@
 # AI DPR Configuration
 # ============================================
 import os
+import secrets
 from pathlib import Path
 from dotenv import load_dotenv
 
 load_dotenv()
+
+
+def _generate_secret_key() -> str:
+    """Generate or retrieve a persistent secret key."""
+    key = os.getenv("SECRET_KEY")
+    if key and key != "ai-dpr-secret-key-change-in-production":
+        return key
+    # Auto-generate a cryptographically secure key
+    return secrets.token_urlsafe(64)
 
 # Base directories
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -33,7 +43,7 @@ class Settings:
     APP_NAME: str = "AI DPR Analysis System"
     APP_VERSION: str = "1.0.0"
     APP_DESCRIPTION: str = "AI-Powered Detailed Project Report Analysis for Indian Government Projects"
-    DEBUG: bool = os.getenv("DEBUG", "True").lower() == "true"
+    DEBUG: bool = os.getenv("DEBUG", "False").lower() == "true"
 
     # Server
     HOST: str = os.getenv("HOST", "0.0.0.0")
@@ -47,8 +57,9 @@ class Settings:
     DATABASE_ECHO: bool = False
 
     # Security
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "ai-dpr-secret-key-change-in-production")
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    SECRET_KEY: str = _generate_secret_key()
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
+    ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", secrets.token_urlsafe(16))
 
     # File handling
     MAX_FILE_SIZE_MB: int = 50

@@ -3,446 +3,640 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="AI-powered DPR analyzer for Indian government projects with NeSETU integration. NLP intelligence, ML risk prediction, and MDoNER compliance validation.">
-    <meta name="author" content="Narasimha Reddy Kasarla">
-    <title>AI DPR Analysis System · MDoNER Intelligence</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏔️</text></svg>">
-    <link rel="stylesheet" href="/static/css/styles.css">
+    <meta name="description" content="AI-powered DPR analyzer for Indian government projects with NeSETU integration.">
+    <title>AI DPR Analysis System · MDoNER</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>">
+    <link rel="stylesheet" href="/static/css/styles.css?v=3">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
-    <!-- Header -->
-    <header class="header">
-        <div class="header-left">
-            <div class="logo">🏔️</div>
-            <div>
-                <h1>AI DPR Analysis System</h1>
-                <span class="subtitle">MDoNER · NeSETU Integrated Intelligence Platform</span>
+    <!-- Mobile Header (Hidden on Desktop) -->
+    <div class="mobile-header">
+        <button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">
+            <i class="fas fa-bars"></i>
+        </button>
+        <span style="font-weight: 600;">AI DPR System</span>
+    </div>
+
+    <!-- ──────────────────────────────────────────
+         SIDEBAR
+         ────────────────────────────────────────── -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">
+                <i class="fas fa-landmark-dome"></i>
+                <div class="sidebar-title-wrapper">
+                    <span class="sidebar-title">AI DPR Analysis</span>
+                    <span class="sidebar-subtitle">MDoNER Intelligence</span>
+                </div>
             </div>
         </div>
-        <div class="header-right">
-            <span class="badge badge-success">● Online</span>
-            <span class="badge badge-info">v2.1.0</span>
-            <a href="https://nesetu.mdoner.gov.in/projects/" target="_blank" class="badge badge-warning" style="text-decoration:none;">NeSETU ↗</a>
+        
+        <nav class="sidebar-nav">
+            <button class="nav-tab active" data-tab="upload" onclick="switchTab('upload')">
+                <i class="fas fa-cloud-arrow-up"></i> Upload DPR
+            </button>
+            <button class="nav-tab" data-tab="analysis" onclick="switchTab('analysis')">
+                <i class="fas fa-microscope"></i> NLP Analysis
+            </button>
+            <button class="nav-tab" data-tab="quality" onclick="switchTab('quality')">
+                <i class="fas fa-award"></i> Quality Score
+            </button>
+            <button class="nav-tab" data-tab="risk" onclick="switchTab('risk')">
+                <i class="fas fa-shield-halved"></i> Risk Predictor
+            </button>
+            <button class="nav-tab" data-tab="nesetu" onclick="switchTab('nesetu')">
+                <i class="fas fa-chart-line"></i> NeSETU Portal
+            </button>
+            <button class="nav-tab" data-tab="dashboard" onclick="switchTab('dashboard')">
+                <i class="fas fa-circle-info"></i> System Info
+            </button>
+            <button class="nav-tab" data-tab="learning" onclick="switchTab('learning'); loadLearningStatus();">
+                <i class="fas fa-brain"></i> AI Learning
+            </button>
+            <button class="nav-tab" data-tab="history" onclick="switchTab('history'); loadDocumentHistory();">
+                <i class="fas fa-clock-rotate-left"></i> Document History
+            </button>
+        </nav>
+
+        <div class="sidebar-footer">
+            SIH 2026 Innovation<br>
+            <span style="color:var(--primary-blue)">v2.1.0 (PostgreSQL)</span>
         </div>
-    </header>
+    </aside>
 
-    <!-- Navigation -->
-    <nav class="nav-tabs">
-        <button class="nav-tab active" data-tab="upload" onclick="switchTab('upload')">
-            <i class="fas fa-upload"></i> Upload DPR
-        </button>
-        <button class="nav-tab" data-tab="analysis" onclick="switchTab('analysis')">
-            <i class="fas fa-search-plus"></i> Analysis
-        </button>
-        <button class="nav-tab" data-tab="quality" onclick="switchTab('quality')">
-            <i class="fas fa-star"></i> Quality Score
-        </button>
-        <button class="nav-tab" data-tab="risk" onclick="switchTab('risk')">
-            <i class="fas fa-exclamation-triangle"></i> Risk Prediction
-        </button>
-        <button class="nav-tab" data-tab="nesetu" onclick="switchTab('nesetu')">
-            <i class="fas fa-landmark"></i> NeSETU Dashboard
-        </button>
-        <button class="nav-tab" data-tab="dashboard" onclick="switchTab('dashboard')">
-            <i class="fas fa-chart-bar"></i> System Info
-        </button>
-        <button class="nav-tab" data-tab="learning" onclick="switchTab('learning')">
-            <i class="fas fa-brain"></i> Model Learning
-        </button>
-    </nav>
-
-    <main class="main-content">
-
-        <!-- ============ UPLOAD TAB ============ -->
-        <section id="tab-upload" class="tab-content active">
-
-            <!-- Hero Banner -->
-            <div class="project-hero">
-                <span class="hero-badge">Ministry of Development of North Eastern Region</span>
-                <h2 class="hero-title">Intelligent DPR Quality Assessment<br>& Risk Prediction Engine</h2>
-                <p class="hero-description">
-                    Upload a <strong>Detailed Project Report</strong> for instant AI-powered analysis. Our system uses
-                    <strong>NLP</strong> to parse documents, <strong>XGBoost/LightGBM</strong> for risk prediction,
-                    and <strong>Explainable AI</strong> (SHAP/LIME) for transparent decision-making — designed for
-                    <strong>8 North Eastern states</strong> under MDoNER.
-                </p>
-                <p class="hero-description" style="margin-bottom:0;">
-                    The AI <strong>learns incrementally</strong> from every DPR uploaded. Supports
-                    <strong>multilingual OCR</strong> for Hindi, Bengali, Assamese, Manipuri &amp; 7+ Indian languages.
-                    Integrated with <strong>NeSETU</strong> — tracking 3,704 projects worth ₹49,082 Cr.
-                </p>
-
-                <div class="hero-features">
-                    <div class="hero-feature-item"><i class="fas fa-check-circle"></i> 14-Section Completeness Check</div>
-                    <div class="hero-feature-item"><i class="fas fa-check-circle"></i> 5-Dimensional Quality Scoring</div>
-                    <div class="hero-feature-item"><i class="fas fa-check-circle"></i> ML Risk Prediction (85%+ Acc.)</div>
-                    <div class="hero-feature-item"><i class="fas fa-check-circle"></i> MDoNER Compliance (90:10 Funding)</div>
-                    <div class="hero-feature-item"><i class="fas fa-check-circle"></i> Monte Carlo Cost Simulation</div>
-                    <div class="hero-feature-item"><i class="fas fa-check-circle"></i> Incremental Learning Engine</div>
-                    <div class="hero-feature-item"><i class="fas fa-check-circle"></i> SHAP / LIME Explainability</div>
-                    <div class="hero-feature-item"><i class="fas fa-check-circle"></i> NeSETU Dashboard Integration</div>
+    <!-- ──────────────────────────────────────────
+         MAIN LAYOUT
+         ────────────────────────────────────────── -->
+    <div class="main-wrapper">
+        <header class="top-header">
+            <div class="header-title">Detailed Project Report Evaluation Engine</div>
+            <div class="header-actions">
+                <div class="status-badge" id="auth-status-badge">
+                    <div class="status-indicator" style="background-color: #fca5a5; box-shadow: 0 0 8px #fca5a5;" id="auth-indicator"></div>
+                    <span id="header-user-role">Not Authenticated</span>
                 </div>
-
-                <div class="tech-stack">
-                    <span class="tech-stack-label">Powered By</span>
-                    <span class="tech-badge green">FastAPI</span>
-                    <span class="tech-badge blue">PostgreSQL</span>
-                    <span class="tech-badge cyan">spaCy</span>
-                    <span class="tech-badge gold">XGBoost</span>
-                    <span class="tech-badge blue">LightGBM</span>
-                    <span class="tech-badge purple">EasyOCR</span>
-                    <span class="tech-badge pink">SHAP</span>
-                    <span class="tech-badge red">Chart.js</span>
-                    <span class="tech-badge cyan">Docker</span>
+                <div id="header-user-info" class="hidden" style="display: flex; align-items: center; gap: 10px; font-size: 14px;">
+                    <i class="fas fa-user-circle" style="font-size: 20px;"></i>
+                    <span id="header-user-name"></span>
+                    <button onclick="logout()" style="background: none; border: none; color: #fca5a5; cursor: pointer; margin-left: 8px;" title="Logout">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
                 </div>
-            </div>
-
-            <!-- Upload Card -->
-            <div class="card">
-                <div class="card-header">
-                    <h2><i class="fas fa-cloud-upload-alt"></i> Upload Detailed Project Report</h2>
-                </div>
-                <div class="card-body">
-                    <form id="upload-form" enctype="multipart/form-data">
-                        <div class="upload-area" id="upload-area">
-                            <i class="fas fa-file-pdf upload-icon"></i>
-                            <h3>Drag & Drop your DPR here</h3>
-                            <p>or click to browse files</p>
-                            <p class="upload-formats">Supported: PDF, DOCX, DOC, TXT | Max: 50MB</p>
-                            <input type="file" id="file-input" accept=".pdf,.docx,.doc,.txt" hidden>
-                        </div>
-                        <div id="file-info" class="file-info hidden">
-                            <i class="fas fa-file-alt"></i>
-                            <span id="file-name"></span>
-                            <span id="file-size"></span>
-                            <button type="button" onclick="clearFile()" class="btn-icon"><i class="fas fa-times"></i></button>
-                        </div>
-
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label><i class="fas fa-map-marker-alt"></i> State</label>
-                                <select id="state-select" name="state">
-                                    <option value="">Select State</option>
-                                    <optgroup label="🏔️ MDoNER States (North East)">
-                                        <option value="Arunachal Pradesh">Arunachal Pradesh</option>
-                                        <option value="Assam">Assam</option>
-                                        <option value="Manipur">Manipur</option>
-                                        <option value="Meghalaya">Meghalaya</option>
-                                        <option value="Mizoram">Mizoram</option>
-                                        <option value="Nagaland">Nagaland</option>
-                                        <option value="Sikkim">Sikkim</option>
-                                        <option value="Tripura">Tripura</option>
-                                    </optgroup>
-                                    <optgroup label="📍 Other States">
-                                        <option value="Andhra Pradesh">Andhra Pradesh</option>
-                                        <option value="Bihar">Bihar</option>
-                                        <option value="Chhattisgarh">Chhattisgarh</option>
-                                        <option value="Goa">Goa</option>
-                                        <option value="Gujarat">Gujarat</option>
-                                        <option value="Haryana">Haryana</option>
-                                        <option value="Himachal Pradesh">Himachal Pradesh</option>
-                                        <option value="Jharkhand">Jharkhand</option>
-                                        <option value="Karnataka">Karnataka</option>
-                                        <option value="Kerala">Kerala</option>
-                                        <option value="Madhya Pradesh">Madhya Pradesh</option>
-                                        <option value="Maharashtra">Maharashtra</option>
-                                        <option value="Odisha">Odisha</option>
-                                        <option value="Punjab">Punjab</option>
-                                        <option value="Rajasthan">Rajasthan</option>
-                                        <option value="Tamil Nadu">Tamil Nadu</option>
-                                        <option value="Telangana">Telangana</option>
-                                        <option value="Uttar Pradesh">Uttar Pradesh</option>
-                                        <option value="Uttarakhand">Uttarakhand</option>
-                                        <option value="West Bengal">West Bengal</option>
-                                    </optgroup>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label><i class="fas fa-project-diagram"></i> Project Type</label>
-                                <select id="project-type" name="project_type">
-                                    <option value="">Select Type</option>
-                                    <option value="road">Road / Highway</option>
-                                    <option value="bridge">Bridge / Flyover</option>
-                                    <option value="building">Building / Complex</option>
-                                    <option value="water">Water Supply / Irrigation</option>
-                                    <option value="power">Power / Energy</option>
-                                    <option value="education">Education Infrastructure</option>
-                                    <option value="health">Health Infrastructure</option>
-                                    <option value="tourism">Tourism Development</option>
-                                    <option value="it">IT / Digital Infrastructure</option>
-                                    <option value="urban">Urban Development</option>
-                                    <option value="rural">Rural Development</option>
-                                    <option value="other">Other</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label><i class="fas fa-tag"></i> Project Name</label>
-                                <input type="text" id="project-name" name="project_name" placeholder="Enter project name">
-                            </div>
-                            <div class="form-group">
-                                <label><i class="fas fa-rupee-sign"></i> Estimated Cost (₹ Crores)</label>
-                                <input type="number" id="project-cost" name="project_cost_crores" placeholder="e.g., 150" step="0.01">
-                            </div>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary btn-lg" id="upload-btn">
-                            <i class="fas fa-rocket"></i> Upload & Analyze DPR
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <div id="upload-progress" class="card hidden">
-                <div class="card-body">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progress-fill"></div>
-                    </div>
-                    <p id="progress-text" class="text-center" style="font-size:14px;color:var(--text-secondary);margin-top:8px;">Uploading...</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- ============ ANALYSIS TAB ============ -->
-        <section id="tab-analysis" class="tab-content">
-            <div id="analysis-placeholder" class="placeholder-card">
-                <i class="fas fa-microscope"></i>
-                <h3>Upload a DPR to see NLP Analysis</h3>
-                <p>Sections, entities, financial figures, and more</p>
-            </div>
-            <div id="analysis-results" class="hidden">
-                <div class="stats-grid">
-                    <div class="stat-card"><div class="stat-icon"><i class="fas fa-file-alt"></i></div><div class="stat-value" id="stat-pages">-</div><div class="stat-label">Pages</div></div>
-                    <div class="stat-card"><div class="stat-icon"><i class="fas fa-font"></i></div><div class="stat-value" id="stat-words">-</div><div class="stat-label">Words</div></div>
-                    <div class="stat-card"><div class="stat-icon"><i class="fas fa-layer-group"></i></div><div class="stat-value" id="stat-sections">-</div><div class="stat-label">Sections Found</div></div>
-                    <div class="stat-card"><div class="stat-icon"><i class="fas fa-rupee-sign"></i></div><div class="stat-value" id="stat-financial">-</div><div class="stat-label">Financial Figures</div></div>
-                </div>
-                <div class="card"><div class="card-header"><h2><i class="fas fa-list-check"></i> Section Analysis</h2></div><div class="card-body" id="sections-list"></div></div>
-                <div class="card"><div class="card-header"><h2><i class="fas fa-tags"></i> Extracted Entities</h2></div><div class="card-body" id="entities-list"></div></div>
-            </div>
-        </section>
-
-        <!-- ============ QUALITY TAB ============ -->
-        <section id="tab-quality" class="tab-content">
-            <div id="quality-placeholder" class="placeholder-card">
-                <i class="fas fa-award"></i>
-                <h3>Upload a DPR to see Quality Score</h3>
-                <p>Comprehensive quality grading with detailed breakdown</p>
-            </div>
-            <div id="quality-results" class="hidden">
-                <div class="grade-display" id="grade-display">
-                    <div class="grade-circle" id="grade-circle">
-                        <span class="grade-letter" id="grade-letter">-</span>
-                        <span class="grade-score" id="grade-score">0</span>
-                    </div>
-                    <div class="grade-info">
-                        <h2 id="grade-description">-</h2>
-                        <p id="grade-status">Upload a DPR to get quality assessment</p>
-                    </div>
-                </div>
-                <div class="card"><div class="card-header"><h2><i class="fas fa-chart-pie"></i> Score Breakdown</h2></div>
-                    <div class="card-body"><div class="score-bars" id="score-bars"></div><div class="chart-container"><canvas id="quality-chart"></canvas></div></div>
-                </div>
-                <div class="card"><div class="card-header"><h2><i class="fas fa-lightbulb"></i> Recommendations</h2></div><div class="card-body" id="quality-recommendations"></div></div>
-            </div>
-        </section>
-
-        <!-- ============ RISK TAB ============ -->
-        <section id="tab-risk" class="tab-content">
-            <div id="risk-placeholder" class="placeholder-card">
-                <i class="fas fa-shield-alt"></i>
-                <h3>Upload a DPR to see Risk Prediction</h3>
-                <p>ML-powered cost overrun & delay prediction with explainability</p>
-            </div>
-            <div id="risk-results" class="hidden">
-                <div class="risk-summary">
-                    <div class="risk-card" id="risk-level-card"><h3>Overall Risk Level</h3><div class="risk-badge" id="risk-level-badge">-</div></div>
-                    <div class="risk-card"><h3>Cost Overrun Risk</h3><div class="risk-percentage" id="cost-risk-pct">0%</div><div class="risk-bar"><div class="risk-bar-fill" id="cost-risk-bar"></div></div></div>
-                    <div class="risk-card"><h3>Delay Risk</h3><div class="risk-percentage" id="delay-risk-pct">0%</div><div class="risk-bar"><div class="risk-bar-fill" id="delay-risk-bar"></div></div></div>
-                </div>
-                <div class="card"><div class="card-header"><h2><i class="fas fa-chart-line"></i> Monte Carlo Simulation</h2></div>
-                    <div class="card-body"><div class="chart-container"><canvas id="monte-carlo-chart"></canvas></div><div id="monte-carlo-stats"></div></div>
-                </div>
-                <div class="card"><div class="card-header"><h2><i class="fas fa-brain"></i> AI Explainability</h2></div><div class="card-body" id="explainability-content"></div></div>
-                <div class="card"><div class="card-header"><h2><i class="fas fa-shield-alt"></i> Mitigation Strategies</h2></div><div class="card-body" id="mitigation-content"></div></div>
-            </div>
-        </section>
-
-        <!-- ============ NeSETU DASHBOARD TAB ============ -->
-        <section id="tab-nesetu" class="tab-content">
-            <div class="nesetu-header">
-                <h2>🏛️ NeSETU · MDoNER Projects Dashboard</h2>
-                <a href="https://nesetu.mdoner.gov.in/projects/" target="_blank" class="nesetu-link">
-                    <i class="fas fa-external-link-alt"></i> Visit NeSETU Portal
+                <button class="btn-primary" id="export-pdf-btn" onclick="downloadPDF()" style="padding: 6px 12px; font-size: 13px; width: auto; background-color: var(--accent-emerald);">
+                    <i class="fas fa-file-pdf"></i> Export Original Report
+                </button>
+                <a href="https://nesetu.mdoner.gov.in/projects/" target="_blank" class="btn-nesetu-top">
+                    NeSETU Dashboard <i class="fas fa-arrow-up-right-from-square"></i>
                 </a>
             </div>
+        </header>
 
-            <!-- KPI Summary -->
-            <div class="nesetu-summary" id="nesetu-kpis">
-                <div class="nesetu-kpi">
-                    <div class="nesetu-kpi-icon">📊</div>
-                    <div class="nesetu-kpi-value" style="color:var(--emerald);" id="nesetu-projects">3,704</div>
-                    <div class="nesetu-kpi-label">Total Projects</div>
-                </div>
-                <div class="nesetu-kpi">
-                    <div class="nesetu-kpi-icon">💰</div>
-                    <div class="nesetu-kpi-value" style="color:var(--gold);" id="nesetu-cost">₹49,082 Cr</div>
-                    <div class="nesetu-kpi-label">Approved Cost</div>
-                </div>
-                <div class="nesetu-kpi">
-                    <div class="nesetu-kpi-icon">📈</div>
-                    <div class="nesetu-kpi-value" style="color:var(--blue-light);" id="nesetu-expenditure">₹36,162 Cr</div>
-                    <div class="nesetu-kpi-label">Expenditure</div>
-                </div>
-                <div class="nesetu-kpi">
-                    <div class="nesetu-kpi-icon">✅</div>
-                    <div class="nesetu-kpi-value" style="color:var(--emerald);" id="nesetu-uc">₹29,473 Cr</div>
-                    <div class="nesetu-kpi-label">U.C. Received</div>
-                </div>
-            </div>
+        <main class="content-area">
 
-            <!-- Scheme Cards -->
-            <div class="scheme-grid" id="scheme-grid"></div>
+            <!-- ============ UPLOAD TAB ============ -->
+            <section id="tab-upload" class="tab-content active">
+                
+                <div class="hero-banner">
+                    <div class="hero-tag">GOVERNMENT OF INDIA</div>
+                    <h1 class="hero-title">Automated DPR Quality & Risk Assessment</h1>
+                    <p class="hero-desc">
+                        Secure AI-driven analysis for infrastructure projects in <strong>North Eastern States</strong>. 
+                        Evaluates documentation against MDoNER guidelines, provides Monte Carlo cost modeling, and 
+                        generates transparent ML risk predictions.
+                    </p>
+                    
+                    <div class="hero-features">
+                        <span class="hero-feature"><i class="fas fa-check"></i> 14-Section Audit</span>
+                        <span class="hero-feature"><i class="fas fa-check"></i> 5D Scoring</span>
+                        <span class="hero-feature"><i class="fas fa-check"></i> Overrun Prediction</span>
+                        <span class="hero-feature"><i class="fas fa-check"></i> SHAP Explainability</span>
+                    </div>
 
-            <!-- MDoNER States -->
-            <div class="card">
-                <div class="card-header">
-                    <h2><i class="fas fa-mountain"></i> North Eastern States</h2>
-                </div>
-                <div class="card-body" id="nesetu-states-info"></div>
-            </div>
-
-            <!-- NeSETU Chart -->
-            <div class="card">
-                <div class="card-header">
-                    <h2><i class="fas fa-chart-bar"></i> Scheme-wise Project Distribution</h2>
-                </div>
-                <div class="card-body">
-                    <div class="chart-container">
-                        <canvas id="nesetu-chart"></canvas>
+                    <div class="tech-badges">
+                        <span class="t-badge t-blue">FastAPI</span>
+                        <span class="t-badge t-blue">PostgreSQL</span>
+                        <span class="t-badge t-gold">XGBoost</span>
+                        <span class="t-badge t-green">spaCy</span>
                     </div>
                 </div>
-            </div>
-        </section>
 
-        <!-- ============ DASHBOARD (System Info) TAB ============ -->
-        <section id="tab-dashboard" class="tab-content">
-            <div class="card">
-                <div class="card-header"><h2><i class="fas fa-info-circle"></i> System Information</h2></div>
-                <div class="card-body">
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <h4>🏛️ AI DPR Analysis System</h4>
-                            <p style="color:var(--text-secondary);line-height:1.7;margin-bottom:12px;">
-                                End-to-end AI platform automating evaluation of government DPRs with focus on
-                                MDoNER states. Combines NLP document intelligence, ML risk prediction, and explainable AI.
-                                Integrated with NeSETU for real-time project tracking.
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-file-pdf"></i> Submit Project Document</h2>
+                    </div>
+                    <div class="card-body">
+                        <form id="upload-form" enctype="multipart/form-data">
+                            
+                            <div class="upload-zone" id="upload-area">
+                                <i class="fas fa-cloud-arrow-up upload-icon"></i>
+                                <h3>Drag and drop DPR file here</h3>
+                                <p>or click to browse local files</p>
+                                <p style="font-size: 12px; margin-top: 8px;">Supports PDF, DOCX, DOC files (Max 50MB)</p>
+                                <input type="file" id="file-input" accept=".pdf,.docx,.doc,.txt" hidden>
+                            </div>
+
+                            <div id="file-info" class="file-info hidden">
+                                <div class="file-details">
+                                    <i class="fas fa-file-circle-check"></i>
+                                    <div>
+                                        <div id="file-name" style="font-size: 14px; color: var(--text-main);"></div>
+                                        <div id="file-size" style="font-size: 12px; color: var(--accent-emerald-hover);"></div>
+                                    </div>
+                                </div>
+                                <button type="button" onclick="clearFile()" class="clear-btn">Remove</button>
+                            </div>
+
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Target State <span style="font-weight:400; font-size:11px; color:#94a3b8;">(Optional)</span></label>
+                                    <select id="state-select" name="state" class="form-control">
+                                        <option value="">Auto-Detect from DPR</option>
+                                        <optgroup label="MDoNER Region">
+                                            <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+                                            <option value="Assam">Assam</option>
+                                            <option value="Manipur">Manipur</option>
+                                            <option value="Meghalaya">Meghalaya</option>
+                                            <option value="Mizoram">Mizoram</option>
+                                            <option value="Nagaland">Nagaland</option>
+                                            <option value="Sikkim">Sikkim</option>
+                                            <option value="Tripura">Tripura</option>
+                                        </optgroup>
+                                        <optgroup label="Other Regions">
+                                            <option value="West Bengal">West Bengal</option>
+                                            <option value="Bihar">Bihar</option>
+                                        </optgroup>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Sector / Domain <span style="font-weight:400; font-size:11px; color:#94a3b8;">(Optional)</span></label>
+                                    <select id="project-type" name="project_type" class="form-control">
+                                        <option value="">Auto-Detect from DPR</option>
+                                        <option value="road">Roads & Highways</option>
+                                        <option value="bridge">Bridges</option>
+                                        <option value="building">Public Buildings</option>
+                                        <option value="water">Water supply</option>
+                                        <option value="health">Healthcare Infrastructure</option>
+                                        <option value="power">Power</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Project Title <span style="font-weight:400; font-size:11px; color:#94a3b8;">(Optional)</span></label>
+                                    <input type="text" id="project-name" class="form-control" placeholder="Auto-Detect">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Outlay (₹ Crores) <span style="font-weight:400; font-size:11px; color:#94a3b8;">(Optional)</span></label>
+                                    <input type="number" id="project-cost" class="form-control" placeholder="Auto-Detect" step="0.01">
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn-primary" id="upload-btn">
+                                Initiate AI Analysis <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div id="upload-progress" class="card hidden">
+                    <div class="progress-container">
+                        <div class="progress-bar-bg">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                        <div class="progress-text" id="progress-text">Processing...</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ ANALYSIS TAB ============ -->
+            <section id="tab-analysis" class="tab-content">
+                <div id="analysis-placeholder" class="placeholder card">
+                    <i class="fas fa-flask"></i>
+                    <h2>No Document Analyzed</h2>
+                    <p>Upload a Detailed Project Report to view extracted NLP insights.</p>
+                </div>
+                
+                <div id="analysis-results" class="hidden">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-header"><i class="fas fa-file-lines"></i> Document Pages</div>
+                            <div class="stat-value" id="stat-pages">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header"><i class="fas fa-font"></i> Word Count</div>
+                            <div class="stat-value" id="stat-words">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header"><i class="fas fa-list-check"></i> Standard Sections</div>
+                            <div class="stat-value" id="stat-sections">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header"><i class="fas fa-indian-rupee-sign"></i> Financials Found</div>
+                            <div class="stat-value" id="stat-financial">-</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2><i class="fas fa-magnifying-glass-chart"></i> Structural Audit</h2>
+                        </div>
+                        <div class="card-body" style="padding: 0;">
+                            <div id="sections-list"></div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2><i class="fas fa-tags"></i> Recognized Entities</h2>
+                        </div>
+                        <div class="card-body" id="entities-list"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ QUALITY TAB ============ -->
+            <section id="tab-quality" class="tab-content">
+                <div id="quality-placeholder" class="placeholder card">
+                    <i class="fas fa-award"></i>
+                    <h2>Quality Assessment Pending</h2>
+                    <p>Score breakdowns will appear here after analysis.</p>
+                </div>
+                
+                <div id="quality-results" class="hidden">
+                    <div class="card">
+                        <div class="grade-panel">
+                            <div class="grade-circle" id="grade-circle">
+                                <div class="grade-letter" id="grade-letter">-</div>
+                                <div class="grade-score"><span id="grade-score">0</span> / 100</div>
+                            </div>
+                            <div class="grade-desc" id="grade-description">Evaluating...</div>
+                            <div class="grade-hint" id="grade-status">Overall Document Grading</div>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid" style="grid-template-columns: 1fr 1fr;">
+                        <div class="card" style="margin-bottom: 0;">
+                            <div class="card-header"><h2><i class="fas fa-scale-balanced"></i> Sub-Scores Breakdown</h2></div>
+                            <div class="card-body" id="score-bars"></div>
+                        </div>
+                        <div class="card" style="margin-bottom: 0;">
+                            <div class="card-header"><h2><i class="fas fa-chart-radar"></i> Multidimensional Chart</h2></div>
+                            <div class="card-body">
+                                <div class="chart-container"><canvas id="quality-chart"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-top: 24px;">
+                        <div class="card-header"><h2><i class="fas fa-clipboard-check"></i> Actionable Recommendations</h2></div>
+                        <div class="card-body" id="quality-recommendations"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ RISK TAB ============ -->
+            <section id="tab-risk" class="tab-content">
+                <div id="risk-placeholder" class="placeholder card">
+                    <i class="fas fa-shield"></i>
+                    <h2>Risk Prediction Pending</h2>
+                    <p>Machine Learning models require document context.</p>
+                </div>
+                
+                <div id="risk-results" class="hidden">
+                    <div id="verdict-box" style="margin-bottom: 24px;"></div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card" id="risk-level-card">
+                            <div class="stat-header"><i class="fas fa-flag"></i> Overall Risk Classification</div>
+                            <div class="risk-badge risk-medium" id="risk-level-badge">EVALUATING</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header"><i class="fas fa-money-bill-trend-up"></i> Cost Overrun Probability</div>
+                            <div class="stat-value text-danger" id="cost-risk-pct" style="margin-bottom: 15px;">0%</div>
+                            <div class="bar-track"><div class="bar-fill" id="cost-risk-bar" style="width: 0%; background-color: #ef4444;"></div></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header"><i class="fas fa-stopwatch"></i> Schedule Delay Probability</div>
+                            <div class="stat-value text-warning" id="delay-risk-pct" style="margin-bottom: 15px;">0%</div>
+                            <div class="bar-track"><div class="bar-fill" id="delay-risk-bar" style="width: 0%; background-color: #f59e0b;"></div></div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><h2><i class="fas fa-chart-line"></i> Probabilistic Cost Distribution (Monte Carlo)</h2></div>
+                        <div class="card-body">
+                            <div class="chart-container"><canvas id="monte-carlo-chart"></canvas></div>
+                            <div id="monte-carlo-stats" style="margin-top: 20px;"></div>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid" style="grid-template-columns: 1fr 1fr;">
+                        <div class="card" style="margin-bottom:0;">
+                            <div class="card-header"><h2><i class="fas fa-network-wired"></i> Explainability Factors</h2></div>
+                            <div class="card-body" id="explainability-content"></div>
+                        </div>
+                        <div class="card" style="margin-bottom:0;">
+                            <div class="card-header"><h2><i class="fas fa-list-ul"></i> Proposed Mitigations</h2></div>
+                            <div class="card-body" id="mitigation-content"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ EXPLAINABILITY TAB (SHAP) ============ -->
+            <section id="tab-explainability" class="tab-content">
+                <div id="explainability-placeholder" class="placeholder card">
+                    <i class="fas fa-lightbulb"></i>
+                    <h2>Explainability Dashboard</h2>
+                    <p>Run risk analysis to see AI decision explanations powered by SHAP.</p>
+                </div>
+                
+                <div id="explainability-results" class="hidden">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2><i class="fas fa-tree"></i> Model Explanations & Feature Importance</h2>
+                            <p style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">SHAP (SHapley Additive exPlanations) values show how each feature contributes to predictions</p>
+                        </div>
+                        <div class="card-body">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                                <!-- Cost Overrun Explanation -->
+                                <div style="border: 1px solid var(--border-color); padding: 16px; border-radius: var(--radius);">
+                                    <h3 style="margin-bottom: 12px; font-size: 14px;"><i class="fas fa-money-bill-trend-up"></i> Cost Overrun Analysis</h3>
+                                    <div id="cost-explanation" style="font-size: 13px; line-height: 1.6; color: var(--text-muted);">
+                                        <p>Loading...</p>
+                                    </div>
+                                    <div id="cost-top-factors" style="margin-top: 12px;"></div>
+                                </div>
+
+                                <!-- Delay Prediction Explanation -->
+                                <div style="border: 1px solid var(--border-color); padding: 16px; border-radius: var(--radius);">
+                                    <h3 style="margin-bottom: 12px; font-size: 14px;"><i class="fas fa-stopwatch"></i> Schedule Delay Analysis</h3>
+                                    <div id="delay-explanation" style="font-size: 13px; line-height: 1.6; color: var(--text-muted);">
+                                        <p>Loading...</p>
+                                    </div>
+                                    <div id="delay-top-factors" style="margin-top: 12px;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><h2><i class="fas fa-shield-halved"></i> Risk Classification Drivers</h2></div>
+                        <div class="card-body">
+                            <div id="risk-drivers-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                                <div>
+                                    <h4 style="margin-bottom: 12px; color: var(--text-muted);">🔴 Risk Drivers (Increase Risk)</h4>
+                                    <div id="risk-drivers-list" style="border-left: 3px solid #ef4444; padding-left: 12px;"></div>
+                                </div>
+                                <div>
+                                    <h4 style="margin-bottom: 12px; color: var(--text-muted);">🟢 Protective Factors (Decrease Risk)</h4>
+                                    <div id="protective-factors-list" style="border-left: 3px solid #10b981; padding-left: 12px;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><h2><i class="fas fa-chart-bar"></i> Feature Importance Ranking</h2></div>
+                        <div class="card-body">
+                            <div id="feature-importance-chart" style="min-height: 300px;">
+                                <canvas id="feature-importance-canvas"></canvas>
+                            </div>
+                            <div id="feature-table" style="margin-top: 24px; overflow-x: auto;"></div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><h2><i class="fas fa-lightbulb"></i> Why This Prediction?</h2></div>
+                        <div class="card-body">
+                            <div id="prediction-rationale" style="background: rgba(96, 165, 250, 0.1); padding: 16px; border-radius: var(--radius); border-left: 4px solid var(--primary-blue);"></div>
+                        </div>
+                    </div>
+            </section>
+
+            <!-- ============ NeSETU TAB ============ -->
+            <section id="tab-nesetu" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-landmark"></i> NeSETU Portal Integration</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="stats-grid" id="nesetu-kpis">
+                            <div class="stat-card">
+                                <div class="stat-header">Total Tracked</div><div class="stat-value" id="nesetu-projects">3,704</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-header">Approved Outlay</div><div class="stat-value" style="color:var(--warning)" id="nesetu-cost">₹49,082 Cr</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-header">Expenditure</div><div class="stat-value" style="color:var(--info)" id="nesetu-expenditure">₹36,162 Cr</div>
+                            </div>
+                        </div>
+
+                        <div id="scheme-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px;"></div>
+                        
+                        <div class="chart-container" style="height: 400px;">
+                            <canvas id="nesetu-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ SYSTEM INFO TAB ============ -->
+            <section id="tab-dashboard" class="tab-content">
+                <div class="card">
+                    <div class="card-header"><h2><i class="fas fa-circle-info"></i> Platform Documentation</h2></div>
+                    <div class="card-body">
+                        <h3 style="margin-bottom:12px; color:var(--primary-blue);">System Capabilities</h3>
+                        <p style="margin-bottom: 24px; color: var(--text-muted); max-width: 800px;">
+                            The AI DPR Analysis Platform is built as a highly robust and automated evaluation layer for submitted Project Reports. It verifies structural completeness against MDoNER expectations and mathematically projects operational risks.
+                        </p>
+
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 32px;">
+                            <div>
+                                <h4 style="margin-bottom: 12px; font-size: 14px;">Technical Pipelines</h4>
+                                <ul style="list-style-position: inside; color: var(--text-muted); line-height: 2;">
+                                    <li>spaCy Custom NER (Location, Monetary)</li>
+                                    <li>EasyOCR implementation for image scans</li>
+                                    <li>XGBoost & LightGBM Ensembles</li>
+                                    <li>SHAP TreeExplainer for Transparency</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 style="margin-bottom: 12px; font-size: 14px;">MDoNER Grading System</h4>
+                                <div id="grade-table"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ HISTORY TAB ============ -->
+            <section id="tab-history" class="tab-content">
+                <div class="card">
+                    <div class="card-header" style="justify-content: space-between;">
+                        <h2><i class="fas fa-clock-rotate-left"></i> Processed Document History</h2>
+                    </div>
+                    <div class="card-body" style="padding: 0; overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; min-width: 800px;">
+                            <thead>
+                                <tr style="background: #f8fafc; border-bottom: 1px solid var(--border-color); text-align: left; font-size: 13px; color: var(--text-muted);">
+                                    <th style="padding: 16px;">V</th>
+                                    <th style="padding: 16px;">Document Name</th>
+                                    <th style="padding: 16px;">State</th>
+                                    <th style="padding: 16px;">Date</th>
+                                    <th style="padding: 16px;">Grade</th>
+                                    <th style="padding: 16px;">Risk Level</th>
+                                    <th style="padding: 16px; text-align: right;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-table-body">
+                                <tr>
+                                    <td colspan="7" style="padding: 32px; text-align: center; color: var(--text-muted);">Loading history...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ LEARNING TAB ============ -->
+            <section id="tab-learning" class="tab-content">
+                <div class="card">
+                    <div class="card-header"><h2><i class="fas fa-brain"></i> AI Model Learning Pipeline</h2></div>
+                    <div class="card-body">
+                        <p style="color:var(--text-muted);margin-bottom:20px;line-height:1.7;">
+                            The AI learns from every DPR through <strong>incremental learning</strong>.
+                            Each upload generates training data. The system auto-augments with synthetic samples and supports
+                            user feedback for ground truth corrections.
+                        </p>
+                        <div id="learning-summary" style="background: rgba(16, 185, 129, 0.1); padding: 16px; border-radius: var(--radius); margin-bottom: 20px; border: 1px solid rgba(16, 185, 129, 0.2); color: var(--emerald);">
+                            Loading learning status...
+                        </div>
+
+                        <div class="stats-grid" id="learning-stats">
+                            <div class="stat-card">
+                                <div class="stat-header">Analyzed DPRs</div><div class="stat-value" id="learn-total-samples">0</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-header">User-Verified</div><div class="stat-value" id="learn-corrected">0</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-header">Model Version</div><div class="stat-value" id="learn-model-version">v0.0</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-header">New Samples</div><div class="stat-value" id="learn-new-samples">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header"><h2><i class="fas fa-sync-alt"></i> Trigger Retraining <span style="font-size: 12px; color: var(--warning); font-weight: 500; margin-left: 8px;"><i class="fas fa-lock"></i> Admin Only</span></h2></div>
+                    <div class="card-body" style="text-align:center;">
+                        <p id="retrain-message" style="color: var(--text-muted); margin-bottom: 16px;">The system requires additional document data to build new model versions.</p>
+                        <button class="btn-primary" id="retrain-btn" onclick="retrainModels()" style="width: auto; margin: 0 auto;">
+                            <i class="fas fa-lock"></i> Initiate Retraining Pipeline
+                        </button>
+                        
+                        <div id="retrain-progress" class="hidden" style="margin-top:20px;">
+                            <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; max-width: 400px; margin: 0 auto;">
+                                <div id="retrain-progress-fill" style="height: 100%; width: 0%; background: var(--accent-emerald); transition: width 0.3s ease;"></div>
+                            </div>
+                            <p id="retrain-progress-text" style="color:var(--text-muted);margin-top:8px; font-size:14px;">Training...</p>
+                        </div>
+                        <div id="retrain-result" class="hidden" style="margin-top:15px; font-size:14px;"></div>
+                    </div>
+                </div>
+                
+                <div class="stats-grid" style="grid-template-columns: 1fr 1fr;">
+                    <div class="card" style="margin-bottom:0;">
+                        <div class="card-header"><h2><i class="fas fa-chart-line"></i> Accuracy Over Time</h2></div>
+                        <div class="card-body">
+                            <div class="chart-container"><canvas id="accuracy-chart"></canvas></div>
+                            <div id="version-history-list" style="margin-top:15px; border-top: 1px solid var(--border-color); padding-top: 15px;"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="margin-bottom:0;">
+                        <div class="card-header"><h2><i class="fas fa-comment-dots"></i> Submit Feedback (Ground Truth)</h2></div>
+                        <div class="card-body">
+                            <p style="color:var(--text-muted);margin-bottom:15px;line-height:1.7;">
+                                After a project completes, provide actual outcomes. Ground truth data incrementally improves AI intelligence.
                             </p>
-                        </div>
-                        <div class="info-item">
-                            <h4>📋 Key Features</h4>
-                            <ul>
-                                <li>NLP-based document parsing & section identification</li>
-                                <li>Multilingual OCR — 10+ Indian languages</li>
-                                <li>Quality scoring with 5 weighted criteria (A+ to F)</li>
-                                <li>Compliance validation (Central + State + MDoNER)</li>
-                                <li>ML risk prediction (XGBoost / LightGBM)</li>
-                                <li>Monte Carlo simulation for cost quantification</li>
-                                <li>Explainable AI with SHAP / LIME</li>
-                                <li>Incremental learning — improves with each DPR</li>
-                                <li>NeSETU dashboard integration</li>
-                            </ul>
-                        </div>
-                        <div class="info-item">
-                            <h4>🏔️ MDoNER States</h4>
-                            <div class="state-tags" id="mdoner-tags"></div>
-                        </div>
-                        <div class="info-item">
-                            <h4>📊 Grading System</h4>
-                            <div class="grade-table" id="grade-table"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ============ MODEL LEARNING TAB ============ -->
-        <section id="tab-learning" class="tab-content">
-            <div class="card">
-                <div class="card-header"><h2><i class="fas fa-brain"></i> AI Model Learning</h2></div>
-                <div class="card-body">
-                    <p style="color:var(--text-secondary);margin-bottom:20px;line-height:1.7;">
-                        The AI learns from every DPR through <strong style="color:var(--text-primary);">incremental learning</strong>.
-                        Each upload generates training data. The system auto-augments with synthetic samples and supports
-                        user feedback for ground truth corrections.
-                    </p>
-                    <div id="learning-summary" class="info-item" style="background:var(--emerald-glow);padding:16px;border-radius:12px;margin-bottom:20px;border:1px solid rgba(16,185,129,0.15);">
-                        <span style="color:var(--text-secondary);">Loading learning status...</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="stats-grid" id="learning-stats">
-                <div class="stat-card"><div class="stat-icon"><i class="fas fa-database"></i></div><div class="stat-value" id="learn-total-samples">0</div><div class="stat-label">DPRs Learned</div></div>
-                <div class="stat-card"><div class="stat-icon"><i class="fas fa-user-check"></i></div><div class="stat-value" id="learn-corrected">0</div><div class="stat-label">User-Verified</div></div>
-                <div class="stat-card"><div class="stat-icon"><i class="fas fa-code-branch"></i></div><div class="stat-value" id="learn-model-version">v0</div><div class="stat-label">Model Version</div></div>
-                <div class="stat-card"><div class="stat-icon"><i class="fas fa-plus-circle"></i></div><div class="stat-value" id="learn-new-samples">0</div><div class="stat-label">New Since Train</div></div>
-            </div>
-
-            <div class="card">
-                <div class="card-header"><h2><i class="fas fa-sync-alt"></i> Retrain Models</h2></div>
-                <div class="card-body" style="text-align:center;">
-                    <p style="color:var(--text-secondary);margin-bottom:15px;" id="retrain-message">Upload more DPRs to enable model retraining.</p>
-                    <button class="btn btn-primary btn-lg" id="retrain-btn" onclick="retrainModels()"><i class="fas fa-rocket"></i> Retrain AI Models</button>
-                    <div id="retrain-progress" class="hidden" style="margin-top:15px;">
-                        <div class="progress-bar"><div class="progress-fill" id="retrain-progress-fill" style="width:0%;"></div></div>
-                        <p id="retrain-progress-text" style="color:var(--text-secondary);margin-top:8px;">Training...</p>
-                    </div>
-                    <div id="retrain-result" class="hidden" style="margin-top:15px;"></div>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-header"><h2><i class="fas fa-chart-line"></i> Accuracy Over Time</h2></div>
-                <div class="card-body">
-                    <div class="chart-container"><canvas id="accuracy-chart"></canvas></div>
-                    <div id="version-history-list" style="margin-top:15px;"></div>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-header"><h2><i class="fas fa-comment-dots"></i> Improve Predictions — Submit Feedback</h2></div>
-                <div class="card-body">
-                    <p style="color:var(--text-secondary);margin-bottom:15px;line-height:1.7;">
-                        After a project completes, provide actual outcomes. Ground truth data makes predictions significantly more accurate.
-                    </p>
-                    <div class="form-grid">
-                        <div class="form-group"><label><i class="fas fa-file-alt"></i> Document ID</label><input type="number" id="feedback-doc-id" placeholder="e.g., 3" min="1"></div>
-                        <div class="form-group"><label><i class="fas fa-rupee-sign"></i> Actual Cost Overrun (%)</label><input type="number" id="feedback-cost" placeholder="e.g., 15" step="0.1" min="0" max="100"></div>
-                        <div class="form-group"><label><i class="fas fa-clock"></i> Actual Delay (months)</label><input type="number" id="feedback-delay" placeholder="e.g., 6" step="0.5" min="0"></div>
-                        <div class="form-group"><label><i class="fas fa-exclamation-triangle"></i> Actual Risk Level</label>
-                            <select id="feedback-risk"><option value="">Select</option><option value="Low">Low</option><option value="Medium">Medium</option><option value="High">High</option><option value="Critical">Critical</option></select>
+                            <div class="form-grid" style="grid-template-columns: 1fr; margin-bottom: 20px;">
+                                <div class="form-group">
+                                    <label class="form-label">Document ID</label>
+                                    <input type="number" id="feedback-doc-id" class="form-control" placeholder="e.g., 3" min="1">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Actual Cost Overrun (%)</label>
+                                    <input type="number" id="feedback-cost" class="form-control" placeholder="e.g., 15" step="0.1" min="0" max="100">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Actual Delay (months)</label>
+                                    <input type="number" id="feedback-delay" class="form-control" placeholder="e.g., 6" step="0.5" min="0">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Actual Risk Level</label>
+                                    <select id="feedback-risk" class="form-control">
+                                        <option value="">Select Level</option>
+                                        <option value="Low">Low</option>
+                                        <option value="Medium">Medium</option>
+                                        <option value="High">High</option>
+                                        <option value="Critical">Critical</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button class="btn-primary" onclick="submitFeedback()" style="width: auto;">
+                                <i class="fas fa-paper-plane"></i> Submit Ground Truth
+                            </button>
+                            <div id="feedback-result" class="hidden" style="margin-top:15px; font-size:14px; padding: 12px; border-radius: var(--radius); background: rgba(59, 130, 246, 0.1); color: var(--primary-blue);"></div>
                         </div>
                     </div>
-                    <button class="btn btn-primary" onclick="submitFeedback()" style="margin-top:10px;"><i class="fas fa-paper-plane"></i> Submit Feedback</button>
-                    <div id="feedback-result" class="hidden" style="margin-top:10px;"></div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Main Auth Modal (Global) -->
+        <div id="auth-modal-overlay" class="modal-overlay hidden">
+            <div class="admin-modal">
+                <div class="admin-modal-header" style="padding-bottom: 12px;">
+                    <div class="admin-modal-icon">
+                        <i class="fas fa-shield-halved"></i>
+                    </div>
+                    <h3>AI-DPR Login</h3>
+                    <p>Government secure portal access.</p>
+                </div>
+                <div class="admin-modal-body" style="padding-top: 12px;">
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label class="form-label"><i class="fas fa-envelope"></i> Email</label>
+                        <input type="email" id="auth-email" class="form-control" placeholder="user@gov.in" autocomplete="email">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-key"></i> Password</label>
+                        <div style="position: relative;">
+                            <input type="password" id="auth-password" class="form-control" placeholder="Password" style="padding-right: 40px;">
+                            <button type="button" onclick="toggleAuthPasswordVisibility()" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--text-muted); cursor:pointer;">
+                                <i id="auth-password-toggle-icon" class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="auth-error" class="hidden" style="margin-top: 12px; padding: 10px; background-color: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius); color: #dc2626; font-size: 13px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-circle-exclamation"></i>
+                        <span id="auth-error-text">Invalid login</span>
+                    </div>
+                </div>
+                <div class="admin-modal-actions" style="justify-content: space-between; align-items: center;">
+                    <span style="font-size:12px; color:var(--text-muted);">Use admin@aidpr.gov.in</span>
+                    <button class="btn-modal-confirm" id="auth-login-btn" onclick="login()">
+                        <i class="fas fa-sign-in-alt"></i> Authenticate
+                    </button>
                 </div>
             </div>
-        </section>
-    </main>
-
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="footer-title">🏔️ AI DPR Analysis System · MDoNER Intelligence</div>
-        <div class="footer-desc">
-            Document Intelligence · Quality Scoring · Compliance Validation · Risk Prediction · Explainable AI · NeSETU Integration
         </div>
-        <div class="footer-credit">
-            Powered by NLP + ML + Responsible AI · <a href="https://nesetu.mdoner.gov.in/projects/" target="_blank">NeSETU Portal</a> · SIH 2026 · Narasimha Reddy Kasarla
-        </div>
-    </footer>
+    </div>
 
     <script src="/static/js/app.js"></script>
 </body>

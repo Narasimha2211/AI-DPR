@@ -28,3 +28,7 @@ ml/models/*.pkl
 ml/models/*.joblib
 ml/trained_models/
 ml/reports/training_report.json
+
+# Firebase credentials (never commit)
+firebase-key.json
+*.firebase*key*.json

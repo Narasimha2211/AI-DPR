@@ -11,7 +11,6 @@ from loguru import logger
 from config.settings import settings
 from app.modules.risk_predictor.feature_engineer import FeatureEngineer
 from app.modules.risk_predictor.ml_models import RiskMLModels
-from app.modules.risk_predictor.explainability import ExplainabilityEngine
 
 
 class RiskAnalyzer:
@@ -70,7 +69,6 @@ class RiskAnalyzer:
     def __init__(self):
         self.feature_engineer = FeatureEngineer()
         self.ml_models = RiskMLModels()
-        self.explainability = ExplainabilityEngine()
 
         # Try to load pre-trained models
         self.ml_models.load_models()
@@ -109,13 +107,8 @@ class RiskAnalyzer:
         delay_prediction = self.ml_models.predict_delay(features)
         risk_classification = self.ml_models.classify_risk(features)
 
-        # Step 3: Generate explanations
-        explanation = self.explainability.explain_predictions(
-            features=features,
-            cost_prediction=cost_prediction,
-            delay_prediction=delay_prediction,
-            risk_classification=risk_classification
-        )
+        # Step 3: No longer generating explainability explanations
+        explanation = {}
 
         # Step 4: Generate mitigation strategies
         mitigation = self._generate_mitigation_strategies(
@@ -146,8 +139,6 @@ class RiskAnalyzer:
             "risk_classification": risk_classification,
 
             "monte_carlo_simulation": monte_carlo,
-
-            "explainability": explanation,
             "mitigation_strategies": mitigation,
 
             "feature_summary": {
